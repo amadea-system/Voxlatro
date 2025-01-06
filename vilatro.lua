@@ -1,11 +1,3 @@
---- STEAMODDED HEADER
---- MOD_NAME: vilatro
---- MOD_ID: VI
---- PREFIX: vi
---- MOD_AUTHOR: [baltdev]
---- MOD_DESCRIPTION: Proper keyboard bindings for Balatro. Might break controller support.
---- VERSION: 0.2.1
-----------------------
 
 local mod = SMODS.current_mod
 

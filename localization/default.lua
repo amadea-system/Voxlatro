@@ -40,7 +40,9 @@ return {
 			vi_keybind_sort_rank = "Sort Rank",
 			vi_keybind_sort_rank_desc = "Sorts your hand by rank",
 			vi_keybind_peek_deck = "Peek Deck",
-			vi_keybind_peek_deck_desc = "Previews your deck"
+			vi_keybind_peek_deck_desc = "Previews your deck",
+			vi_keybind_talon_rpc = "Talon RPC HotKey",
+			vi_keybind_talon_rpc_desc = "Signals Balatro that Talon has sent a command\nRequired for some features to work"
 		}
 	}
 }

@@ -29,4 +29,5 @@ return {
 	["SortSuit"] = "x", --
 	["SortRank"] = "z", --
 	["PeekDeck"] = "o", --
+	["TalonRPC"] = "f6", --
 }

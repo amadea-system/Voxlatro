@@ -681,6 +681,7 @@ local keybinds = {
 	["SortSuit"] = sort_suit,
 	["SortRank"] = sort_rank,
 	["PeekDeck"] = peek_deck,
+	["TalonRPC"] = run_talon_RPC_command,
 }
 
 for i = 1, 10 do
@@ -1018,6 +1019,15 @@ mod.config_tab = function()
 					label = "vi_keybind_sort_rank",
 					info = "vi_keybind_sort_rank_desc"
 				},
+			}},
+			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
+				create_keybind_button {
+					ref_table = mod.config,
+					ref_value = "TalonRPC",
+					label = "vi_keybind_talon_rpc",
+					info = "vi_keybind_talon_rpc_desc"
+				},
+				
 			}},
 		}
 	}

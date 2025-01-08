@@ -6,6 +6,7 @@ G.kb_select_offset = 0
 local selected_id
 local last_state 
 local last_highlighted
+-- ---------- Local Functions ----------
 
 local function reset_vars()
 	if G.kb_selected_area then G.kb_selected_area:unhighlight_all() end
@@ -63,7 +64,16 @@ local function add_offset(amount)
 	update_offset(G.kb_select_offset + amount)
 end
 
+--- Sets the currently selected card area
+--- @param id string The ID of the card area to select (e.g. 'hand', 'jokers', etc.)
 local function set_selected(id)
+	--- If the target area doesn't exist or is empty:
+	---   - Reset variables if we're already focused on that area
+	---   - Return without doing anything
+	--- Otherwise:
+	---   - Focus the game controller on the area
+	---   - Update the selected area ID and reference
+	---   - Update the offset to match current scroll position
 	print("Switching to " .. id)
 	if not G[id] or not G[id].cards or #G[id].cards == 0 then 
 		if selected_id == id then
@@ -76,7 +86,16 @@ local function set_selected(id)
 	update_offset(G.kb_select_offset)
 end
 
+--- Handles toggling card selection at a given offset index. This is the function called by the `0` - `9` KeyBindings
+--- @param index number The 0-based index from the current scroll offset to select/deselect
 local function toggle_selected(index)
+	--- If no area is currently selected:
+	---   - Sets appropriate default area based on game state
+	---   - Returns without selecting if no valid area available
+	--- If the target card exists and is selectable:
+	---   - Toggles highlight state of card at offset + index + 1 
+	---   - Updates hover state and last highlighted card tracking
+	---   - Unhighlights previous card if one exists
 	if G.kb_selected_area and G.kb_selected_area.cards and #G.kb_selected_area.cards == 0 then
 		reset_vars()
 	end
@@ -149,6 +168,7 @@ local function discard()
 		local current_blind = G.GAME.blind_on_deck or 'Small'
 		if current_blind == "Boss" then return end
 		
+		-- TODO: Make `_tag` local
 		_tag = Tag(G.GAME.round_resets.blind_tags[current_blind], nil, current_blind)
 		
 		if not _tag then
@@ -389,6 +409,7 @@ local update_card = Card.update
 local update_area = CardArea.update
 local draw_card = Card.draw
 
+---@diagnostic disable-next-line: duplicate-set-field
 function Card:update(dt)
 	update_card(self, dt)
 	if not self.area then
@@ -403,6 +424,7 @@ function Card:update(dt)
 	end
 end
 
+---@diagnostic disable-next-line: duplicate-set-field
 function CardArea:update(dt)
 	update_area(self, dt)
 	if self.cards then
@@ -412,8 +434,16 @@ function CardArea:update(dt)
 	end
 end
 
+-- TODO: I think that `Card:draw(...)` is supposed to take a variable named `layer`
+---@diagnostic disable-next-line: duplicate-set-field
 function Card:draw()
 	draw_card(self)
+
+	-- This seems to do the following:
+	--  - Nothing if the card is NOT in the currently selected area
+	--  - Otherwise:
+	--    - Add a Triangle Pointer to the card to indicate it's selected
+
 	
 	if self.area == G.kb_selected_area 
 		and self.__kb_index

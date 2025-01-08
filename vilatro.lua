@@ -1,5 +1,30 @@
 
+-- ---------- Imports ----------
+
+--- @module 'inspect'
+local inspect, err = SMODS.load_file("lib/inspect.lua")()
+if err then
+	print("Error loading library `inspect`: " .. err)
+	error(err)
+end
+
+--- @module 'json'
+local json, err = SMODS.load_file("lib/json.lua")()
+if err then
+	print("Error loading library `json`: " .. err)
+	error(err)
+end
+
+--- @module 'Talon_RPC'
+local Talon_RPC, err = SMODS.load_file("lib/Talon_RPC.lua")()
+if err then
+	print("Error loading library `talon_rpc`: " .. err)
+	error(err)
+end
+-- ---------- Local Variables ----------
+
 local mod = SMODS.current_mod
+local talon_rpc = Talon_RPC:new()
 
 G.kb_select_offset = 0
 
@@ -461,6 +486,153 @@ function Card:draw()
 		love.graphics.pop() 
 	end
 end
+
+-- Talon Functions
+
+
+--- @class TalonRPCParams
+--- @field payload? any The return value for the response, if any.
+--- @field error? string If the command failed, this is the error message to include in the response.
+--- @field warning? string If there was a warning, a warning message to include in the response, if any.
+
+--- Sends a response encoded as JSON to Talon via the talon_rpc library
+---@param uuid string The UUID of the command that was sent. This will be encoded into the response.
+---@param params TalonRPCParams The table containing the parameters for the response. Valid keys are:
+---  - `payload`: The return value for the response, if any.
+---  - `error`: If the command failed, this is the error message to include in the response.
+---  - `warning`: If there was a warning, a warning message to include in the response, if any.
+local function send_talon_RPC_response(uuid, params)
+	local payload = params.payload
+	local error = params.error
+	local warning = params.warning
+
+	-- Response Format:
+	-- {
+	-- 	  uuid: string,           # Must match the UUID of the command that was sent
+	-- 	  error: string | None,   # If the command failed, this will contain the error message. This will cause Talon to throw an error
+	-- 	  warnings: list[string], # If the command failed, this will contain the warning message. Talon will print the warning message to the console
+	-- 	  returnValue: any,       # [Optional] If we need to return a value, this will contain it
+	-- }
+
+	local full_response = {
+		uuid = uuid,
+		-- error = "null",  -- We have to set this to `"null"` instead of `nil` because it will be stripped out by the JSON encoder otherwise
+		error = json.null,  -- We have to set this to `json.null` instead of `nil` because it will be stripped out by the JSON encoder otherwise
+		warnings = {},
+	}
+	if payload ~= nil then
+		full_response.returnValue = payload
+	end
+	if error ~= nil then
+		print("RPC ERROR! " .. error)
+		full_response.error = error
+	end
+
+	if warning ~= nil then
+		print("RPC WARNING! " .. warning)
+		full_response.warnings = { warning }
+	end
+
+	print("Constructed Response: " .. inspect(full_response))
+
+	local encoded_response = json.encode(full_response)
+	print("Encoded Response: " .. encoded_response)
+	
+	if talon_rpc:write(encoded_response) then
+		print("Response Successfully Sent via RPC")
+	end
+end
+
+local function run_talon_RPC_command()
+
+	local raw_json_str = talon_rpc:read()
+	if raw_json_str == nil then
+		print("ERROR! Talon RPC Triggered but no data was received")
+		return
+	end
+
+
+	print("Got RPC Command from Talon! " .. raw_json_str)
+
+	-- Decode JSON Command
+	local command = json.decode(raw_json_str)
+	if command == nil then
+		print("ERROR! Invalid Talon RPC Command. Unable to decode JSON from Raw JSON String: " .. raw_json_str)
+		return
+	end
+
+	print("Decoded RPC Command: " .. inspect(command))
+
+	
+	-- Handle Command
+	-- Command Format:
+	-- {
+	-- 	  uuid: string,
+	-- 	  data = {
+	-- 		        type: string,
+	-- 		        value: any
+	-- 	  },
+	--    waitForFinish: boolean,
+	--    returnCommandOutput: boolean
+	-- }
+
+	if command.uuid == nil then
+		print("ERROR! No UUID in Talon RPC Command. Aborting.")
+		return
+	end
+
+	local payload = nil
+
+
+	-- first check if it has the `type` key
+	if command.data == nil then
+		send_talon_RPC_response(command.uuid, {error = "No `data` key in RPC Command"})
+		print("ERROR! No `data` key in RPC Command: " .. inspect(command))
+		return
+	end
+
+	if command.data.type == nil then
+		send_talon_RPC_response(command.uuid, {error = "No `data.type` key in RPC Command"})
+		print("ERROR! No `data.type` key in RPC Command: " .. inspect(command))
+		return
+	end
+
+	if command.data.type == "selectCard" then
+		-- if actions["cardNumber"] == nil then
+		-- 	send_talon_RPC_response("No `cardNumber` key in Talon Command", true)
+		-- 	return
+		-- end
+
+		-- index = actions["cardNumber"] or 0
+		index = command.data.cardNumber or 0
+		toggle_selected(index)
+		print("Toggled Selected as Requested: " .. index)
+
+		payload = {
+			type = "no-action"
+		}
+	elseif command.data.type == "debugCounter" then
+		local cb_debug_counter = 42
+		print("Received Debug Counter Command from Talon. Responding With Debug Counter: " .. cb_debug_counter)
+		payload = {
+			type = "debug-counter",
+			value = cb_debug_counter
+		}
+		cb_debug_counter = cb_debug_counter + 1
+
+	elseif command.data.type == "requestTimedOut" then
+		print("WARNING! Did not respond to Talon Request in time!!")
+		return
+
+	else
+		send_talon_RPC_response(command.uuid, {error = "Unknown Talon Action... Type: " .. command.data.type})
+		return
+	end
+
+	send_talon_RPC_response(command.uuid, {payload = payload})
+
+end
+
 
 -- Mod stuff
 

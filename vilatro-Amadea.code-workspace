@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Extracted-Balatro-Source-Code"
+		}
+	],
+	"settings": {
+		// [Lua Language Server | Wiki](https://luals.github.io/wiki/settings/)
+		// [Sheepolution - How to LÖVE - Visual Studio Code](https://sheepolution.com/learn/book/bonus/vscode)
+		"Lua.runtime.version": "LuaJIT",
+		"Lua.diagnostics.globals":[
+			"love",
+		],
+		"Lua.workspace.library": [
+			"${3rd}/love2d/library",
+			"../../Extracted-Balatro-Source-Code"
+		],
+		// "Lua.workspace.checkThirdParty": false,
+	}
+}

@@ -1,0 +1,4 @@
+
+# Exclude all files from the meta_annotations folder, except for the readme.md file
+meta_annotations/*
+!meta_annotations/readme.md

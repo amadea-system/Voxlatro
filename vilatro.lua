@@ -599,19 +599,22 @@ local function run_talon_RPC_command()
 	end
 
 	if command.data.type == "selectCard" then
-		-- if actions["cardNumber"] == nil then
-		-- 	send_talon_RPC_response("No `cardNumber` key in Talon Command", true)
-		-- 	return
-		-- end
+		-- Expected Command Data Format:
+		-- cardNumber: 1-based index of card to select
 
-		-- index = actions["cardNumber"] or 0
-		index = command.data.cardNumber or 0
-		toggle_selected(index)
+		index = command.data.cardNumber or 1
+		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
+		toggle_selected(index - 1)
 		print("Toggled Selected as Requested: " .. index)
 
 		payload = {
-			type = "no-action"
+			type = "no-action",
+			reflection = {
+				type = "cardNumber",
+				value = index
 		}
+		}
+	
 	elseif command.data.type == "debugCounter" then
 		local cb_debug_counter = 42
 		print("Received Debug Counter Command from Talon. Responding With Debug Counter: " .. cb_debug_counter)

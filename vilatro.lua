@@ -528,11 +528,7 @@ end
 
 
 
-
---- @class TalonRPCParams
---- @field payload? any The return value for the response, if any.
---- @field error? string If the command failed, this is the error message to include in the response.
---- @field warning? string If there was a warning, a warning message to include in the response, if any.
+-- ::::: RPC Command Processing :::::
 
 --- Sends a response encoded as JSON to Talon via the talon_rpc library
 ---@param uuid string The UUID of the command that was sent. This will be encoded into the response.
@@ -540,83 +536,17 @@ end
 ---  - `payload`: The return value for the response, if any.
 ---  - `error`: If the command failed, this is the error message to include in the response.
 ---  - `warning`: If there was a warning, a warning message to include in the response, if any.
+---@deprecated
 local function send_talon_RPC_response(uuid, params)
-	local payload = params.payload
-	local error = params.error
-	local warning = params.warning
-
-	-- Response Format:
-	-- {
-	-- 	  uuid: string,           # Must match the UUID of the command that was sent
-	-- 	  error: string | None,   # If the command failed, this will contain the error message. This will cause Talon to throw an error
-	-- 	  warnings: list[string], # If the command failed, this will contain the warning message. Talon will print the warning message to the console
-	-- 	  returnValue: any,       # [Optional] If we need to return a value, this will contain it
-	-- }
-
-	local full_response = {
-		uuid = uuid,
-		-- error = "null",  -- We have to set this to `"null"` instead of `nil` because it will be stripped out by the JSON encoder otherwise
-		error = json.null,  -- We have to set this to `json.null` instead of `nil` because it will be stripped out by the JSON encoder otherwise
-		warnings = {},
-	}
-	if payload ~= nil then
-		full_response.returnValue = payload
-	end
-	if error ~= nil then
-		print("RPC ERROR! " .. error)
-		full_response.error = error
-	end
-
-	if warning ~= nil then
-		print("RPC WARNING! " .. warning)
-		full_response.warnings = { warning }
-	end
-
-	print("Constructed Response: " .. inspect(full_response))
-
-	local encoded_response = json.encode(full_response)
-	print("Encoded Response: " .. encoded_response)
-	
-	if talon_rpc:write(encoded_response) then
-		print("Response Successfully Sent via RPC")
-	end
+	return talon_rpc:send_response(uuid, params)
 end
 
+
 local function run_talon_RPC_command()
-
-	local raw_json_str = talon_rpc:read()
-	if raw_json_str == nil then
-		print("ERROR! Talon RPC Triggered but no data was received")
-		return
-	end
-
-
-	print("Got RPC Command from Talon! " .. raw_json_str)
-
-	-- Decode JSON Command
-	local command = json.decode(raw_json_str)
+	local command = talon_rpc:read_request()
 	if command == nil then
-		print("ERROR! Invalid Talon RPC Command. Unable to decode JSON from Raw JSON String: " .. raw_json_str)
-		return
-	end
-
-	print("Decoded RPC Command: " .. inspect(command))
-
-	
-	-- Handle Command
-	-- Command Format:
-	-- {
-	-- 	  uuid: string,
-	-- 	  data = {
-	-- 		        type: string,
-	-- 		        value: any
-	-- 	  },
-	--    waitForFinish: boolean,
-	--    returnCommandOutput: boolean
-	-- }
-
-	if command.uuid == nil then
-		print("ERROR! No UUID in Talon RPC Command. Aborting.")
+		-- For now, no need to log this here. As it is currently logged in the Talon_RPC:read_request() function
+		-- print("ERROR! Talon RPC Triggered but no data was received")
 		return
 	end
 
@@ -625,13 +555,13 @@ local function run_talon_RPC_command()
 
 	-- first check if it has the `type` key
 	if command.data == nil then
-		send_talon_RPC_response(command.uuid, {error = "No `data` key in RPC Command"})
+		talon_rpc:send_response(command.uuid, {error = "No `data` key in RPC Command"})
 		print("ERROR! No `data` key in RPC Command: " .. inspect(command))
 		return
 	end
 
 	if command.data.type == nil then
-		send_talon_RPC_response(command.uuid, {error = "No `data.type` key in RPC Command"})
+		talon_rpc:send_response(command.uuid, {error = "No `data.type` key in RPC Command"})
 		print("ERROR! No `data.type` key in RPC Command: " .. inspect(command))
 		return
 	end
@@ -718,11 +648,11 @@ local function run_talon_RPC_command()
 		return
 
 	else
-		send_talon_RPC_response(command.uuid, {error = "Unknown Talon Action... Type: " .. command.data.type})
+		talon_rpc:send_response(command.uuid, {error = "Unknown Talon Action... Type: " .. command.data.type})
 		return
 	end
 
-	send_talon_RPC_response(command.uuid, {payload = payload})
+	talon_rpc:send_response(command.uuid, {payload = payload})
 
 end
 

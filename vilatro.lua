@@ -511,7 +511,7 @@ local function toggle_overlay_menu(menu_type, abort_on__no_esc)
 
 	if abort_on__no_esc == nil then abort_on__no_esc = true end
 
-	-- TODO: Write docs on `G.OVERLAY_MENU.config.no_esc`
+	-- TODO: Write docs on `G.OVERLAY_MENU.config.no_esc` (See: `engine/controller.lua:#L795`)
 	if abort_on__no_esc and G.OVERLAY_MENU and G.OVERLAY_MENU.config.no_esc then
 		print("Aborting toggle_overlay_menu(" .. menu_type .. ") because G.OVERLAY_MENU.config.no_esc is true")
 		return {state=nil, msg="Unable to Toggle. no_esc is true"}

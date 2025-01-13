@@ -8,19 +8,14 @@ if err then
 	error(err)
 end
 
---- @module 'json'
-local json, err = SMODS.load_file("lib/json.lua")()
-if err then
-	print("Error loading library `json`: " .. err)
-	error(err)
-end
-
 --- @module 'Talon_RPC'
 local Talon_RPC, err = SMODS.load_file("lib/Talon_RPC.lua")()
 if err then
 	print("Error loading library `talon_rpc`: " .. err)
 	error(err)
 end
+
+
 -- ---------- Local Variables ----------
 
 local mod = SMODS.current_mod
@@ -541,6 +536,8 @@ local function send_talon_RPC_response(uuid, params)
 	return talon_rpc:send_response(uuid, params)
 end
 
+-- ::::: RPC Command Processing :::::
+
 
 local function run_talon_RPC_command()
 	local command = talon_rpc:read_request()
@@ -570,7 +567,7 @@ local function run_talon_RPC_command()
 		-- Expected Command Data Format:
 		-- cardNumber: 1-based index of card to select
 
-		index = command.data.cardNumber or 1
+		local index = command.data.cardNumber or 1
 		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
 		toggle_selected(index - 1)
 		print("Toggled Selected as Requested: " .. index)

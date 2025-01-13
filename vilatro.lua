@@ -490,6 +490,44 @@ end
 
 -- Talon Functions
 
+-- ::::: RPC Command Helpers :::::
+
+---@enum overlay_menu_types
+local OVERLAY_MENU_TYPES = {
+	options = 1,
+	run_info = 2,
+}
+
+local _overlay_menu_functions_tbl = {
+	[OVERLAY_MENU_TYPES.options] = G.FUNCS.options,
+	[OVERLAY_MENU_TYPES.run_info] = G.FUNCS.run_info,
+}
+
+--- Helper function to toggle the different overlay menus
+--- @param menu_type overlay_menu_types The type of menu to toggle
+--- @param abort_on__no_esc? boolean If true, will abort if `G.OVERLAY_MENU.config.no_esc` is true. Default: true
+--- @return {state: boolean?, msg: string} table The return value of the function. State: True=Opened, False=Closed, nil=menu could not be toggled (E.G., If no_esc, or other issues)
+local function toggle_overlay_menu(menu_type, abort_on__no_esc)
+
+	if abort_on__no_esc == nil then abort_on__no_esc = true end
+
+	-- TODO: Write docs on `G.OVERLAY_MENU.config.no_esc`
+	if abort_on__no_esc and G.OVERLAY_MENU and G.OVERLAY_MENU.config.no_esc then
+		print("Aborting toggle_overlay_menu(" .. menu_type .. ") because G.OVERLAY_MENU.config.no_esc is true")
+		return {state=nil, msg="Unable to Toggle. no_esc is true"}
+	end
+
+	if G.OVERLAY_MENU then
+		G.FUNCS:exit_overlay_menu()
+		return {state=false, msg="Menu Closed"}
+	end
+
+	_overlay_menu_functions_tbl[menu_type]({})
+	return {state=true, msg="Menu Opened"}
+end
+
+
+
 
 --- @class TalonRPCParams
 --- @field payload? any The return value for the response, if any.
@@ -631,6 +669,38 @@ local function run_talon_RPC_command()
 			reflection = {
 				type = "cardNumbers",
 				value = card_numbers
+			}
+		}
+
+	elseif command.data.type == "toggleRunInfo" then
+		-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true
+
+		-- TODO: !Critical! Prevent this from running when a Run is not in progress.
+		local new_menu_state = toggle_overlay_menu(OVERLAY_MENU_TYPES.run_info)
+		print("Toggled Run Info as Requested: " .. inspect(new_menu_state))
+
+		payload = {
+			type = "no-action",
+			reflection = {
+				type = "toggleRunInfo",
+				value = new_menu_state.msg
+			}
+		}
+
+		
+	elseif command.data.type == "toggleOptionsMenu" then
+		-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true
+
+
+		local new_menu_state = toggle_overlay_menu(OVERLAY_MENU_TYPES.options)
+
+		print("Toggled Options Menu as Requested: " .. inspect(new_menu_state))
+
+		payload = {
+			type = "no-action",
+			reflection = {
+				type = "toggleOptionsMenu",
+				value = new_menu_state.msg
 			}
 		}
 

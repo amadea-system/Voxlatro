@@ -69,6 +69,8 @@ local function update_offset(value)
 	end
 end
 
+--- Adds/Subtracts [amount] from the current card selection offset
+--- @param amount number The amount to add/subtract from the current card selection offset
 local function add_offset(amount)
 	if not G.kb_selected_area then return end
 	if not G[selected_id] then 

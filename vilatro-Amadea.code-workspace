@@ -16,7 +16,8 @@
 		],
 		"Lua.workspace.library": [
 			"${3rd}/love2d/library",
-			"../../Extracted-Balatro-Source-Code"
+			"../../Extracted-Balatro-Source-Code",
+			"meta_annotations"
 		],
 		// "Lua.workspace.checkThirdParty": false,
 	}

@@ -461,10 +461,9 @@ function CardArea:update(dt)
 	end
 end
 
--- TODO: I think that `Card:draw(...)` is supposed to take a variable named `layer`
 ---@diagnostic disable-next-line: duplicate-set-field
-function Card:draw()
-	draw_card(self)
+function Card:draw(layer)
+	draw_card(self, layer)
 
 	-- This seems to do the following:
 	--  - Nothing if the card is NOT in the currently selected area

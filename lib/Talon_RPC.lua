@@ -18,6 +18,8 @@ local Talon_RPC = { _version = "0.1.0" }
 
 -- ---------- Methods ----------
 
+-- ----- Initialization -----
+
 --- Create a new instance of the Talon_RPC class
 ---@param location? rpcFileLocation The location that the RPC file should be saved to. Defaults to `"save"`.
 ---@return Talon_RPC
@@ -88,6 +90,7 @@ end
 --- Write data to the RPC file - Time Sensitive Encoding
 --- @param data string The data to write to the RPC file as a JSON string
 --- @return boolean True if the data was successfully written to the RPC file, false otherwise
+--- @deprecated
 function Talon_RPC:write_time_sensitive(data)
 	-- local file = io.open(get_rpc_path(), 'w')
 	local file = io.open(self.rpc_response_path, 'w')
@@ -119,6 +122,7 @@ end
 
 --- Read data from the RPC file if it's new  - Only works with time sensitive encoded files
 --- @return string|nil The data from the RPC file as a JSON string if it's new, nil otherwise
+--- @deprecated
 function Talon_RPC:read_time_sensitive()
 	-- local file = io.open(self.rpc_file_path, 'r')
 	local file = io.open(self.rpc_request_path, 'r')
@@ -137,8 +141,8 @@ function Talon_RPC:read_time_sensitive()
 	return nil
 end
 
-
 --- Clear the RPC file
+--- @deprecated
 function Talon_RPC:clear()
 
     local request_file = io.open(self.rpc_request_path, 'w')

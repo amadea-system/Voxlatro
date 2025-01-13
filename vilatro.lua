@@ -615,6 +615,25 @@ local function run_talon_RPC_command()
 		}
 		}
 	
+	elseif command.data.type == "selectMultipleCards" then
+		-- Expected Command Data Format:
+		-- cardNumbers: list of 1-based indices of cards to select
+
+		local card_numbers = command.data.cardNumbers or {}
+		for i, card_number in ipairs(card_numbers) do
+			-- TODO: Refactor `toggle_selected()` to use 1-based indexing
+			toggle_selected(card_number - 1)
+		end
+		print("Toggled Selected as Requested: " .. inspect(card_numbers))
+
+		payload = {
+			type = "no-action",
+			reflection = {
+				type = "cardNumbers",
+				value = card_numbers
+			}
+		}
+
 	elseif command.data.type == "debugCounter" then
 		local cb_debug_counter = 42
 		print("Received Debug Counter Command from Talon. Responding With Debug Counter: " .. cb_debug_counter)

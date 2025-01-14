@@ -8,7 +8,7 @@ if err then
 	error(err)
 end
 
---- @module 'Talon_RPC'
+--- @module 'talon_rpc'
 local Talon_RPC, err = SMODS.load_file("lib/talon_rpc.lua")()
 if err then
 	print("Error loading library `talon_rpc`: " .. err)

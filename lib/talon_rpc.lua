@@ -178,6 +178,14 @@ end
 
 -- ----- RPC Functions -----
 
+--- @class TalonRPCCommand
+--- @field uuid string The UUID of the command
+--- @field data table The data associated with the command
+--- @field waitForFinish boolean If true, ?
+--- @field returnCommandOutput boolean If true, the response must return the output of the command
+
+--- Reads a request from the RPC file
+--- @return TalonRPCCommand? TalonRPCCommand? The table containing the command data, or nil if no data was found
 function Talon_RPC:read_request()
     local raw_json_str = self:read()
 	if raw_json_str == nil then

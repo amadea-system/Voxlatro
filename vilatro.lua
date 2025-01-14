@@ -525,19 +525,6 @@ end
 
 -- ::::: RPC Command Processing :::::
 
---- Sends a response encoded as JSON to Talon via the talon_rpc library
----@param uuid string The UUID of the command that was sent. This will be encoded into the response.
----@param params TalonRPCParams The table containing the parameters for the response. Valid keys are:
----  - `payload`: The return value for the response, if any.
----  - `error`: If the command failed, this is the error message to include in the response.
----  - `warning`: If there was a warning, a warning message to include in the response, if any.
----@deprecated
-local function send_talon_RPC_response(uuid, params)
-	return talon_rpc:send_response(uuid, params)
-end
-
--- ::::: RPC Command Processing :::::
-
 
 local function run_talon_RPC_command()
 	local command = talon_rpc:read_request()

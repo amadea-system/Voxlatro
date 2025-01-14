@@ -647,49 +647,25 @@ end
 
 -- ::::: RPC Command Processing :::::
 
+-- ----- Talon RPC Command Handlers -----
 
-local function run_talon_RPC_command()
-	local command = talon_rpc:read_request()
-	if command == nil then
-		-- For now, no need to log this here. As it is currently logged in the Talon_RPC:read_request() function
-		-- print("ERROR! Talon RPC Triggered but no data was received")
-		return
-	end
-
-	local payload = nil
-
-
-	-- first check if it has the `type` key
-	if command.data == nil then
-		talon_rpc:send_response(command.uuid, {error = "No `data` key in RPC Command"})
-		print("ERROR! No `data` key in RPC Command: " .. inspect(command))
-		return
-	end
-
-	if command.data.type == nil then
-		talon_rpc:send_response(command.uuid, {error = "No `data.type` key in RPC Command"})
-		print("ERROR! No `data.type` key in RPC Command: " .. inspect(command))
-		return
-	end
-
-	if command.data.type == "selectCard" then
-		-- Expected Command Data Format:
-		-- cardNumber: 1-based index of card to select
+local function handle_selectCard(command)
 
 		local index = command.data.cardNumber or 1
 		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
 		toggle_selected(index - 1)
 		print("Toggled Selected as Requested: " .. index)
 
-		payload = {
+	return {
 			type = "no-action",
 			reflection = {
 				type = "cardNumber",
 				value = index
 		}
 		}
+end
 	
-	elseif command.data.type == "selectMultipleCards" then
+local function handle_selectMultipleCards(command)
 		-- Expected Command Data Format:
 		-- cardNumbers: list of 1-based indices of cards to select
 
@@ -700,47 +676,45 @@ local function run_talon_RPC_command()
 		end
 		print("Toggled Selected as Requested: " .. inspect(card_numbers))
 
-		payload = {
+	return {
 			type = "no-action",
 			reflection = {
 				type = "cardNumbers",
 				value = card_numbers
 			}
 		}
+end
 
-	elseif command.data.type == "toggleRunInfo" then
+local function handle_toggleRunInfo(command)
 		-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true
-
 		-- TODO: !Critical! Prevent this from running when a Run is not in progress.
 		local new_menu_state = toggle_overlay_menu(OVERLAY_MENU_TYPES.run_info)
 		print("Toggled Run Info as Requested: " .. inspect(new_menu_state))
 
-		payload = {
+	return {
 			type = "no-action",
 			reflection = {
 				type = "toggleRunInfo",
 				value = new_menu_state.msg
 			}
 		}
+end
 
-		
-	elseif command.data.type == "toggleOptionsMenu" then
+local function handle_toggleOptionsMenu(command)
 		-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true
-
-
 		local new_menu_state = toggle_overlay_menu(OVERLAY_MENU_TYPES.options)
-
 		print("Toggled Options Menu as Requested: " .. inspect(new_menu_state))
 
-		payload = {
+	return {
 			type = "no-action",
 			reflection = {
 				type = "toggleOptionsMenu",
 				value = new_menu_state.msg
 			}
 		}
+end
 
-	elseif command.data.type == "changeCycleOption" then
+local function handle_changeCycleOption(command)
 		local direction = command.data.direction
 		local result = step_through_option_cycle(direction)
 		if not result.state then
@@ -748,15 +722,17 @@ local function run_talon_RPC_command()
 			return
 		end
 		print("Cycled Option Menu via RPC Command: " .. inspect(result))
-		payload = {
+
+	return {
 			type = "no-action",
 			reflection = {
 				type = command.data.type,
 				value = result.msg
 			}
 		}
-	elseif command.data.type == "changeTab" then
+end
 
+local function handle_changeTab(command)
 		local direction = command.data.direction
 		local tab_number = command.data.tabNumber
 		local result = change_overlay_menu_tab(direction, tab_number)
@@ -767,33 +743,146 @@ local function run_talon_RPC_command()
 
 		print("Changed Tab via RPC Command: " .. inspect(result))
 
-		payload = {
+	return {
 			type = "no-action",
 			reflection = {
 				type = command.data.type,
 				value = result.msg
 			}
 		}
+end
 
-	elseif command.data.type == "debugCounter" then
+local function handle_debugCounter(command)
 		local cb_debug_counter = 42
 		print("Received Debug Counter Command from Talon. Responding With Debug Counter: " .. cb_debug_counter)
-		payload = {
+	cb_debug_counter = cb_debug_counter + 1
+	return {
 			type = "debug-counter",
 			value = cb_debug_counter
 		}
-		cb_debug_counter = cb_debug_counter + 1
+end
 
-	elseif command.data.type == "requestTimedOut" then
+local function handle_requestTimedOut(command)
 		print("WARNING! Did not respond to Talon Request in time!!")
-		return
+	return nil
+end
 
-	else
-		talon_rpc:send_response(command.uuid, {error = "Unknown Talon Action... Type: " .. command.data.type})
+
+--- Enum for overlay menu states
+--- @enum RequiredOverlayMenuState
+local RequiredOverlayMenuState = {
+    FORBID = "forbid",  -- Command cannot run when an overlay menu is open
+    ALLOW = "allow",    -- Command can run regardless of overlay menu state
+    REQUIRE = "require" -- Command requires an active overlay menu
+}
+
+--- @class CommandHandlers
+--- @field handler function(command: TalonRPCCommand) The function to call when the command is received
+--- @field data_keys table<string, boolean> The keys that are valid for the command. The Key is the key name, and the value is a boolean indicating if the key is required or not.
+--- @field overlay_menu RequiredOverlayMenuState Default: `allow`. The type of overlay menu to open when the command is received. Valid values are "forbid", "allow", and "require". "forbid": The command cannot run while an overlay menu is open. "allow": The command can run regardless of the state of any overlay menu. "require": The command can only run when an overlay menu is open.
+--- @field conditions function(command: TalonRPCCommand)? An optional function to call to determine if the command can be handled. If the function returns `true`, the command will be handled. Otherwise, it will be ignored.
+
+local command_handlers = {
+    selectCard = {
+        handler = handle_selectCard,
+        data_keys = {cardNumber = true},
+        overlay_menu = RequiredOverlayMenuState.FORBID
+    },
+    selectMultipleCards = {
+        handler = handle_selectMultipleCards,
+        data_keys = {cardNumbers = true},
+        overlay_menu = RequiredOverlayMenuState.FORBID
+    },
+    toggleRunInfo = {
+        handler = handle_toggleRunInfo,
+        data_keys = {},  -- No required keys
+        overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+    },
+    toggleOptionsMenu = {
+        handler = handle_toggleOptionsMenu,
+        data_keys = {},  -- No required keys
+        overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+    },
+    changeCycleOption = {
+        handler = handle_changeCycleOption,
+        data_keys = {direction = true},
+        overlay_menu = RequiredOverlayMenuState.REQUIRE  -- Can run regardless of overlay menu state
+    },
+    changeTab = {
+        handler = handle_changeTab,
+        data_keys = {direction = false, tabNumber = false},
+        overlay_menu = RequiredOverlayMenuState.ALLOW,  -- Can run regardless of overlay menu state
+        conditions = function(command)
+            -- Ensure at least one of `direction` or `tabNumber` is provided
+            return command.data.direction or command.data.tabNumber
+        end
+    },
+    debugCounter = {
+        handler = handle_debugCounter,
+        data_keys = {},  -- No required keys
+        overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+    },
+    requestTimedOut = {
+        handler = handle_requestTimedOut,
+        data_keys = {},  -- No required keys
+        overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+    }
+}
+
+-- Main function to handle the RPC command
+local function run_talon_RPC_command()
+    local command = talon_rpc:read_request()
+    if not command then
+        -- For now, no need to log this here. As it is currently logged in the Talon_RPC:read_request() function
+		-- print("ERROR! Talon RPC Triggered but no data was received")
+		return
+    end
+
+    -- Check for necessary `data` and `type` keys
+    if not command.data or not command.data.type then
+        local msg = not command.data and "Missing `data` key in RPC Command" or "Missing `data.type` key in RPC Command"
+		talon_rpc:send_response(command.uuid, {error = msg})
+		print("ERROR! " .. msg .. ": " .. inspect(command))
 		return
 	end
 
+    local handler_entry = command_handlers[command.data.type]
+    if not handler_entry then
+        talon_rpc:send_response(command.uuid, {error = "Unknown Balatro RPC Command: " .. command.data.type})
+        return
+    end
+
+    -- Check overlay menu condition
+    if handler_entry.overlay_menu == RequiredOverlayMenuState.FORBID and G.OVERLAY_MENU then
+        talon_rpc:send_response(command.uuid, {warning = "Cannot use `" .. command.data.type .. "` command while in Overlay Menu"})
+        return
+    elseif handler_entry.overlay_menu == RequiredOverlayMenuState.REQUIRE and not G.OVERLAY_MENU then
+        talon_rpc:send_response(command.uuid, {warning = "Command `" .. command.data.type .. "` requires an active Overlay Menu"})
+        return
+    end
+
+	-- print("Overlay Menu Status> handler_entry.overlay_menu: " .. handler_entry.overlay_menu .. " G.OVERLAY_MENU: " .. tostring(G.OVERLAY_MENU) .. " not G.OVERLAY_MENU: " .. tostring(not G.OVERLAY_MENU))
+
+    -- Validate required keys in the command data
+    for key, is_required in pairs(handler_entry.data_keys) do
+        if is_required and not command.data[key] then
+            talon_rpc:send_response(command.uuid, {error = "Missing required key `" .. key .. "` in RPC Command"})
+            print("ERROR! Missing required key `" .. key .. "` in RPC Command: " .. inspect(command))  -- This print statement is redundant.
+            return
+        end
+    end
+
+    -- Check additional conditions (if provided)
+    if handler_entry.conditions and not handler_entry.conditions(command) then
+        talon_rpc:send_response(command.uuid, {warning = "Unable to run command. Conditions for command `" .. command.data.type .. "` failed"})
+        return  -- Ignore the command if the condition function returns false
+    end
+
+    -- Call the handler function for the command
+    local payload = handler_entry.handler(command)
+    if payload then
 	talon_rpc:send_response(command.uuid, {payload = payload})
+    end
 
 end
 

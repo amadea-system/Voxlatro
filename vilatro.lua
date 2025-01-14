@@ -602,6 +602,49 @@ local function change_overlay_menu_tab(direction, tab_number)
 	end
 end
 
+local function step_through_option_cycle(direction)
+    -- TODO: This doesn't work very many places yet. Mostly in places where there are multiple cyclers. We probably need to provide a way to focus on specific cyclers?
+
+	-- - Parameter Validation -
+	if direction == nil or (direction ~= 'left' and direction ~= 'right') then 
+		return {state=false, msg="Must Provide Valid Direction. Valid Values: 'left' or 'right'"}
+	end
+
+	-- Command Only Valid if `G.OVERLAY_MENU` is true (Aka a Menu is Open)
+	if not G.OVERLAY_MENU then 
+		return {state=false, msg="Overlay Menu Not Open"}
+	end
+
+	-- - Get Current Menu w/ Tabs -
+
+	local cycler_shoulders = G.OVERLAY_MENU:get_UIE_by_ID('cycle_shoulders')
+	if not cycler_shoulders then 
+		return {state=false, msg="Could not find Cycle Shoulders UI Element"}
+	end
+
+	local cycler = cycler_shoulders.children[1]
+	if not cycler then 
+		return {state=false, msg="Current Menu Does Not Have Any Options to Cycle"}
+	end
+
+	if not cycler.config.focus_args or cycler.config.focus_args.type ~= 'cycle' then
+		-- I'm not sure if this will ever happen, but it's here just in case. I'm not sure what would cause this.
+		local value_to_dump = cycler.config.focus_args and cycler.config.focus_args.type or "nil"
+		return {state=false, msg="Tab UI Element Not Focused or something... (cycler.config.focus_args.type = " .. value_to_dump .. ")"}
+	end
+
+	if direction == 'left' then
+		cycler.children[1]:click()
+		return {state=true, msg="Cycled Left"}
+	elseif direction == 'right' then
+		cycler.children[3]:click()
+		return {state=true, msg="Cycled Right"}
+	end
+
+	return {state=false, msg="Critical Error: Unreachable location."}
+
+end
+
 -- ::::: RPC Command Processing :::::
 
 
@@ -697,6 +740,21 @@ local function run_talon_RPC_command()
 			}
 		}
 
+	elseif command.data.type == "changeCycleOption" then
+		local direction = command.data.direction
+		local result = step_through_option_cycle(direction)
+		if not result.state then
+			talon_rpc:send_response(command.uuid, {warning = result.msg})
+			return
+		end
+		print("Cycled Option Menu via RPC Command: " .. inspect(result))
+		payload = {
+			type = "no-action",
+			reflection = {
+				type = command.data.type,
+				value = result.msg
+			}
+		}
 	elseif command.data.type == "changeTab" then
 
 		local direction = command.data.direction

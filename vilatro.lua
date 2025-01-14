@@ -658,10 +658,7 @@ local function handle_selectCard(command)
 
 	return {
 			type = "no-action",
-			reflection = {
-				type = "cardNumber",
-				value = index
-		}
+		reflection = {type = command.data.type, value = index}
 		}
 end
 	
@@ -678,10 +675,7 @@ local function handle_selectMultipleCards(command)
 
 	return {
 			type = "no-action",
-			reflection = {
-				type = "cardNumbers",
-				value = card_numbers
-			}
+		reflection = {type = command.data.type, value = card_numbers}
 		}
 end
 
@@ -693,10 +687,7 @@ local function handle_toggleRunInfo(command)
 
 	return {
 			type = "no-action",
-			reflection = {
-				type = "toggleRunInfo",
-				value = new_menu_state.msg
-			}
+		reflection = {type = command.data.type, value = new_menu_state.msg}
 		}
 end
 
@@ -707,10 +698,7 @@ local function handle_toggleOptionsMenu(command)
 
 	return {
 			type = "no-action",
-			reflection = {
-				type = "toggleOptionsMenu",
-				value = new_menu_state.msg
-			}
+		reflection = {type = command.data.type, value = new_menu_state.msg}
 		}
 end
 
@@ -725,10 +713,7 @@ local function handle_changeCycleOption(command)
 
 	return {
 			type = "no-action",
-			reflection = {
-				type = command.data.type,
-				value = result.msg
-			}
+		reflection = {type = command.data.type, value = result.msg}
 		}
 end
 
@@ -745,10 +730,7 @@ local function handle_changeTab(command)
 
 	return {
 			type = "no-action",
-			reflection = {
-				type = command.data.type,
-				value = result.msg
-			}
+		reflection = {type = command.data.type, value = result.msg}
 		}
 end
 
@@ -756,10 +738,7 @@ local function handle_debugCounter(command)
 		local cb_debug_counter = 42
 		print("Received Debug Counter Command from Talon. Responding With Debug Counter: " .. cb_debug_counter)
 	cb_debug_counter = cb_debug_counter + 1
-	return {
-			type = "debug-counter",
-			value = cb_debug_counter
-		}
+	return {type = "debug-counter", value = cb_debug_counter}
 end
 
 local function handle_requestTimedOut(command)

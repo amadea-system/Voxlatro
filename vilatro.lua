@@ -549,7 +549,7 @@ local function change_overlay_menu_tab(direction, tab_number)
 		return {state=false, msg="Current Menu Does Not Have Tabs"}
 	end
 
-	if tab_shoulders.config.focus_args.type ~= 'tab' then
+	if not tab_shoulders.config.focus_args or tab_shoulders.config.focus_args.type ~= 'tab' then
 		-- I'm not sure if this will ever happen, but it's here just in case. I'm not sure what would cause this.
 		return {state=false, msg="Tab UI Element Not Focused or something... (tab_shoulders.config.focus_args.type = " .. tab_shoulders.config.focus_args.type .. ")"}
 	end

@@ -521,7 +521,86 @@ local function toggle_overlay_menu(menu_type, abort_on__no_esc)
 	return {state=true, msg="Menu Opened"}
 end
 
+--- @param direction? string The direction to change the tab to. Valid values are 'left' and 'right'. If nil, will use `tab_number` instead.
+--- @param tab_number? number The number of the tab to choose. If nil, will use `direction` instead.
+local function change_overlay_menu_tab(direction, tab_number)
 
+	-- - Parameter Validation -
+
+	if direction == nil and tab_number == nil then 
+		return {state=false, msg="Must Provide Either Direction or Tab Number"}
+	end
+	
+	if direction ~= nil and direction ~= 'left' and direction ~= 'right' then 
+		return {state=false, msg="Invalid Direction: " .. direction}
+	end
+
+	-- Hold off on validating `tab_number` until we know how many tabs there are
+
+	-- Command Only Valid if `G.OVERLAY_MENU` is true (Aka a Menu is Open)
+	if not G.OVERLAY_MENU then 
+		return {state=false, msg="Overlay Menu Not Open"}
+	end
+
+	-- - Get Current Menu w/ Tabs -
+
+	local tab_shoulders = G.OVERLAY_MENU:get_UIE_by_ID('tab_shoulders')
+	if not tab_shoulders then 
+		return {state=false, msg="Current Menu Does Not Have Tabs"}
+	end
+
+	if tab_shoulders.config.focus_args.type ~= 'tab' then
+		-- I'm not sure if this will ever happen, but it's here just in case. I'm not sure what would cause this.
+		return {state=false, msg="Tab UI Element Not Focused or something... (tab_shoulders.config.focus_args.type = " .. tab_shoulders.config.focus_args.type .. ")"}
+	end
+
+	-- - Get Tabs From Menu -
+	local proto_choices = tab_shoulders.UIBox:get_group(nil, tab_shoulders.children[1].children[1].config.group)
+	dprint:log("Proto Tabs: " .. inspect(proto_choices, {depth=3}))
+	local choices = {}
+	for _, v in ipairs(proto_choices) do
+		if v.config.choice and v.config.button then choices[#choices+1] = v end
+	end
+
+	-- - Validate Current State -
+
+	-- if not choices then 
+	if #choices == 0 then
+		-- I'm also not sure if this will ever happen, but it's here just in case. I'm not sure what would cause this.
+		return {state=false, msg="No Valid Tabs Found"}
+	end
+
+	if tab_number ~= nil and (tab_number < 1 or tab_number > #choices) then 
+		return {state=false, msg="Invalid Tab Number: " .. tab_number .. " (Valid Numbers: 1 - " .. #choices .. ")"}
+	end
+
+	if tab_number ~= nil then
+		if choices[tab_number].config.chosen then
+			return {state=false, msg="Tab #" .. tab_number .. " Already Chosen"}
+		end
+
+		choices[tab_number]:click()
+		return {state=true, msg="Switched to Tab #" .. tab_number}
+	end
+
+	if direction ~= nil then
+		for k, v in ipairs(choices) do
+			if v.config.chosen then
+				local next_i = nil
+				if direction == 'left' then 
+					next_i = k ~= 1 and (k-1) or (#choices)
+					if tab_shoulders.config.focus_args.no_loop and next_i > k then return {state=false, msg="Can not go any further left"} end
+				elseif direction == 'right' then 
+					next_i = k ~= #choices and (k+1) or (1)
+					if tab_shoulders.config.focus_args.no_loop and next_i < k then return {state=false, msg="Can not go any further right"} end
+				end
+
+				choices[next_i]:click()
+				return {state=true, msg="Switched to Tab #" .. next_i}
+			end
+		end
+	end
+end
 
 -- ::::: RPC Command Processing :::::
 
@@ -615,6 +694,26 @@ local function run_talon_RPC_command()
 			reflection = {
 				type = "toggleOptionsMenu",
 				value = new_menu_state.msg
+			}
+		}
+
+	elseif command.data.type == "changeTab" then
+
+		local direction = command.data.direction
+		local tab_number = command.data.tabNumber
+		local result = change_overlay_menu_tab(direction, tab_number)
+		if not result.state then
+			talon_rpc:send_response(command.uuid, {warning = result.msg})
+			return
+		end
+
+		print("Changed Tab via RPC Command: " .. inspect(result))
+
+		payload = {
+			type = "no-action",
+			reflection = {
+				type = command.data.type,
+				value = result.msg
 			}
 		}
 

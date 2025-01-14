@@ -1,4 +1,3 @@
---
 -- Talon File RPC Library
 -- This library is used to send and receive data from Talon
 -- It does this by writing and reading from a temporary file.

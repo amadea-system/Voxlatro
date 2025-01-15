@@ -917,6 +917,8 @@ end
 
 -- Mod stuff
 
+
+--- Table defining the default keybinds for the mod that are only available when no Overlay Menu is open
 local keybinds = {
 	["Inc10"] = function()
 		add_offset(10) -- 
@@ -962,7 +964,6 @@ local keybinds = {
 	["SortSuit"] = sort_suit,
 	["SortRank"] = sort_rank,
 	["PeekDeck"] = peek_deck,
-	["TalonRPC"] = run_talon_RPC_command,
 }
 
 for i = 1, 10 do
@@ -971,17 +972,29 @@ for i = 1, 10 do
 	end
 end
 
-for key, action in pairs(keybinds) do
+--- Table defining the default keybinds for the mod that are always available regardless of the state of `G.OVERLAY_MENU`
+local always_available_keybinds = {
+	["TalonRPC"] = run_talon_RPC_command
+}
+
+
+local function register_keybinds(keybinding_table, block_by_overlay_menu)
+	for key, action in pairs(keybinding_table) do
 	if mod.config[key] ~= false then
 		SMODS.Keybind {
 			key = "vilatro_binding_" .. key,
 			key_pressed = mod.config[key],
 			action = function()
-				if not G.OVERLAY_MENU then action() end
+					if not G.OVERLAY_MENU or not block_by_overlay_menu then action() end
 			end
 		}
+		end
 	end
 end
+
+register_keybinds(keybinds, true)
+register_keybinds(always_available_keybinds, false)
+
 
 
 -- UI stuff

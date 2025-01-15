@@ -16,6 +16,22 @@ if err then
 end
 
 
+local runEvalCommand = nil
+local success, dpAPI = pcall(require, "debugplus-api")
+if success and dpAPI.isVersionCompatible(1) then
+    -- print("DebugPlus API is available")
+	runEvalCommand, err = SMODS.load_file("lib/eval_code.lua")()
+	if err then
+		print("Error loading library `eval_code`: " .. err)
+		runEvalCommand = nil
+	end
+else
+	print("DebugPlus API is not available")
+end
+
+-- ---------- Constants ----------
+local ENABLE_ARBITRARY_EVAL = false  -- Only enable this if you know what you are doing. It is a security risk.
+
 -- ---------- Local Variables ----------
 
 local mod = SMODS.current_mod
@@ -746,6 +762,34 @@ local function handle_requestTimedOut(command)
 	return nil
 end
 
+local function handle_evalLua(command)
+	if not ENABLE_ARBITRARY_EVAL then
+		local msg = 'Unable to run arbitrary Lua code. ENABLE_ARBITRARY_EVAL is false.'
+		talon_rpc:send_response(command.uuid, {error = msg})
+		return
+	end
+	if runEvalCommand == nil then
+		local msg = 'Unable to run arbitrary Lua code. runEvalCommand is nil.'
+		talon_rpc:send_response(command.uuid, {error = msg})
+		return
+	end
+
+	local lua_code = command.data.luaCode
+	if not lua_code then
+		print("WARNING! Missing `luaCode` in RPC Command!")
+		return
+	end
+	local result = runEvalCommand(lua_code)
+	if not result then
+		talon_rpc:send_response(command.uuid, {error = "WARNING! Error in Lua Code: " .. inspect(result)})
+		return
+	end
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = result or "nil"}
+	}
+end
+
 
 --- Enum for overlay menu states
 --- @enum RequiredOverlayMenuState
@@ -799,6 +843,11 @@ local command_handlers = {
     debugCounter = {
         handler = handle_debugCounter,
         data_keys = {},  -- No required keys
+        overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+    },
+	evalLua = {
+		handler = handle_evalLua,
+		data_keys = {luaCode = true},
         overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
     },
     requestTimedOut = {

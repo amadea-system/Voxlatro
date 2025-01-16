@@ -9,7 +9,7 @@ if err then
 end
 
 --- @module 'talon_rpc'
-local Talon_RPC, err = SMODS.load_file("lib/talon_rpc.lua")()
+local Talon_RPC, err = SMODS.load_file("core/talon_rpc.lua")()
 if err then
 	print("Error loading library `talon_rpc`: " .. err)
 	error(err)
@@ -20,7 +20,7 @@ local runEvalCommand = nil
 local success, dpAPI = pcall(require, "debugplus-api")
 if success and dpAPI.isVersionCompatible(1) then
     -- print("DebugPlus API is available")
-	runEvalCommand, err = SMODS.load_file("lib/eval_code.lua")()
+	runEvalCommand, err = SMODS.load_file("core/eval_code.lua")()
 	if err then
 		print("Error loading library `eval_code`: " .. err)
 		runEvalCommand = nil

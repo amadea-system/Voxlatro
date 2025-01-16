@@ -572,7 +572,7 @@ local function change_overlay_menu_tab(direction, tab_number)
 
 	-- - Get Tabs From Menu -
 	local proto_choices = tab_shoulders.UIBox:get_group(nil, tab_shoulders.children[1].children[1].config.group)
-	dprint:log("Proto Tabs: " .. inspect(proto_choices, {depth=3}))
+	-- dprint:log("Proto Tabs: " .. inspect(proto_choices, {depth=3}))
 	local choices = {}
 	for _, v in ipairs(proto_choices) do
 		if v.config.choice and v.config.button then choices[#choices+1] = v end

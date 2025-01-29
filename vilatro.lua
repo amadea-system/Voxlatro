@@ -533,6 +533,11 @@ local command_handlers = {
         data_keys = {cardNumbers = true},
         overlay_menu = RequiredOverlayMenuState.FORBID
     },
+    moveCard = {
+        handler = handle_moveCard,
+        data_keys = {cardNumber = true, movement = true},
+        overlay_menu = RequiredOverlayMenuState.FORBID
+    },
     toggleRunInfo = {
         handler = handle_toggleRunInfo,
         data_keys = {},  -- No required keys

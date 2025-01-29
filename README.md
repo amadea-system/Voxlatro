@@ -1,12 +1,17 @@
-# vilatro
+# Voxlatro
 
-Balatro mod to make the game accessible to keyboard-only users.
+Balatro mod to make the game accessible to Talon users. Expands upon the original Vilatro mod by adding support for interfacing w/ Talon via RPC Commands. Additionally, I plan on adding a few other related Quality of Life features, such as enhancing Vilatro GUI elements / adding new ones, etc.
 
-Made out of necessity. Expect to have to ask for updates.
+This mod is still very much in development and quite a mess. Additionally, this is my first time working with Lua, so I expect there to be many issues & for the code to be quite bleh.  
+AKA: Your mileage may vary, no guarantees, etc.  
 
-## Usage
+I do plan on continuing to work on this mod and improve it over time, but no guarantees.  
 
-You can download a .zip of the mod using the "Download ZIP" button under the "Code" dropdown in GitHub's UI, or by clicking [here](https://github.com/balt-dev/vilatro/archive/refs/heads/trunk.zip).
+If you have any questions or need help, feel free to reach out to me. I'm happy to help, but may not be able to respond immediately depending on my availability and/or current workload.
+
+## Available RPC Commands
+
+Please see the [RPC-Commands.md](RPC-Commands.md) file for a list of available RPC commands.
 
 ## Gallery
 

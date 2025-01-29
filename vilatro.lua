@@ -201,8 +201,8 @@ local function change_overlay_menu_tab(direction, tab_number)
 	end
 
 	if not tab_shoulders.config.focus_args or tab_shoulders.config.focus_args.type ~= 'tab' then
-		-- I'm not sure if this will ever happen, but it's here just in case. I'm not sure what would cause this.
-		return {state=false, msg="Tab UI Element Not Focused or something... (tab_shoulders.config.focus_args.type = " .. tab_shoulders.config.focus_args.type .. ")"}
+		-- print(inspect(tab_shoulders.config, {depth = 2}))
+		return {state=false, msg="Current Menu Only Has One Tab, or other issue."}
 	end
 
 	-- - Get Tabs From Menu -
@@ -577,9 +577,10 @@ local function run_talon_RPC_command()
     -- Call the handler function for the command
 	-- TODO: Be able to handle more than just payload. Handle any Warnings/Errors as well.
     local payload = handler_entry.handler(command)
-    if payload then
-        AMA.talon_rpc:send_response(command.uuid, {payload = payload})
+    if not payload then
+		payload = {type = "no-action", reflection = {type = command.data.type, value = "Default Canned Response"}}
     end
+	AMA.talon_rpc:send_response(command.uuid, {payload = payload})
 
 end
 

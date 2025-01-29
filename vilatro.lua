@@ -20,6 +20,13 @@ if err then
 	error(err)
 end
 
+--- @module 'utils'
+local utils, err = SMODS.load_file("core/utils.lua")()
+if err then
+	print("Error loading library `utils`: " .. err)
+	error(err)
+end
+
 --- @module 'DPrint'
 local DPrint, err = SMODS.load_file("lib/DPrint.lua")()
 if err then

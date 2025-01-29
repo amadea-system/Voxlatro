@@ -144,7 +144,7 @@ function AMA.Amilatro:toggle_selected(index)
 	---   - Toggles highlight state of card at offset + index + 1 
 	---   - Updates hover state and last highlighted card tracking
 	---   - Unhighlights previous card if one exists
-    print("Toggling Selection with Index " .. index .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
+    -- print("Toggling Selection with Index " .. index .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
 	if G.kb_selected_area and G.kb_selected_area.cards and #G.kb_selected_area.cards == 0 then
 		self:reset_vars()
 	end
@@ -173,7 +173,7 @@ function AMA.Amilatro:toggle_selected(index)
 	local total_index = G.kb_select_offset + index + 1
 	if 1 > total_index or total_index > #G.kb_selected_area.cards then return end
 	local card = G.kb_selected_area.cards[total_index]
-	print("Selecting Card #" .. total_index .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
+	-- print("Selecting Card #" .. total_index .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
 	if card.highlighted then
 		if self.last_highlighted then
 			self.last_highlighted:stop_hover()

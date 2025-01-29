@@ -20,7 +20,16 @@ if err then
 	error(err)
 end
 
+--- @module 'DPrint'
+local DPrint, err = SMODS.load_file("lib/DPrint.lua")()
+if err then
+	print("Error loading library `dprint`: " .. err)
+	error(err)
+end
+
+
 -- ---------- Create AMA ----------
+AMA.dprint = DPrint:n{enabled=true, log_console=false, log_file=true, file_name="debug.log", folder_name="debug_logs", add_datetime=true}
 AMA.talon_rpc = Talon_RPC:new()
 
 local runEvalCommand = nil

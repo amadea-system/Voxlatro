@@ -329,6 +329,54 @@ local function handle_selectMultipleCards(command)
 		reflection = {type = command.data.type, value = card_numbers}
 		}
 end
+
+local function handle_invertCardSelection(command)
+	-- Expected Command Data Format:
+	-- exceptCards: list of 1-based indices of cards to avoid inverting. Optional
+
+	local except_cards = command.data.exceptCards or {}
+	local number_of_cards = AMA.Amilatro:get_size()
+	if number_of_cards == 0 then
+		AMA.talon_rpc:send_response(command.uuid, {error = "No Cards In Selected Area or No Area Selected (e1)"})
+		return
+	end
+
+	local cards_to_raise = {}
+	local cards_to_lower = {}
+
+	if not G.kb_selected_area or not G.kb_selected_area.cards then
+		AMA.talon_rpc:send_response(command.uuid, {error = "No Cards In Selected Area or No Area Selected (e2)"})
+		return
+	end
+	for i, card in ipairs(G.kb_selected_area.cards) do
+		if not utils.check_if_value_in_table(i, except_cards) then
+			if card.highlighted then
+				table.insert(cards_to_lower, i)
+			else
+				table.insert(cards_to_raise, i)
+			end
+		else
+			print("Skipping Card #" .. i)
+		end
+	end
+
+	for i, card_number in ipairs(cards_to_lower) do
+		-- print("[INVERTING] Lowering Card #" .. card_number)
+		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
+		AMA.Amilatro:toggle_selected(card_number - 1)
+	end
+	for i, card_number in ipairs(cards_to_raise) do
+		-- print("[INVERTING] Raising Card #" .. card_number)
+		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
+		AMA.Amilatro:toggle_selected(card_number - 1)
+	end
+
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = except_cards}
+	}
+end
+
 local function handle_moveCard(command)
 	-- TODO: I'm very much unhappy with the way the Command Data is structured. We should refactor this!!!
 	
@@ -531,6 +579,11 @@ local command_handlers = {
     selectMultipleCards = {
         handler = handle_selectMultipleCards,
         data_keys = {cardNumbers = true},
+        overlay_menu = RequiredOverlayMenuState.FORBID
+    },
+    invertCardSelection = {
+        handler = handle_invertCardSelection,
+        data_keys = {exceptCards = false},
         overlay_menu = RequiredOverlayMenuState.FORBID
     },
     moveCard = {

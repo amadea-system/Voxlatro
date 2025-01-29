@@ -5,6 +5,12 @@
 		},
 		{
 			"path": "../../Extracted-Balatro-Source-Code"
+		},
+		{
+			"path": "../../debug_logs"
+		},
+		{
+			"path": "../../Mods/lovely/dump"
 		}
 	],
 	"settings": {
@@ -20,5 +26,14 @@
 			"meta_annotations"
 		],
 		// "Lua.workspace.checkThirdParty": false,
+		"Lua.hint.enable": true,
+		"Lua.codeLens.enable": false,
+		"Lua.type.inferParamType": false,
+		"Lua.hint.paramName": "Literal",
+		"Lua.workspace.ignoreDir": [
+			".vscode",
+			"../../Mods/lovely/dump"
+		],
+		"Lua.diagnostics.disable": ["trailing-space"]
 	}
 }

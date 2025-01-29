@@ -13,17 +13,20 @@ end
 
 G.kb_select_offset = 0
 
--- ----- Amilatro Class Object -----
+-- ----- Voxlatro Class Object -----
 
--- TODO: We should not name this class Amilatro. Come up with a better name
---- @class Amilatro
+-- TODO: We should not name this class Amilatro. Come up with a better name.
+--       I don't remember if our objection was that `Amilatro` was just a name we didn't like in general.
+--       Or if we wanted a name that more aligned with card selection? I think it was the latter.
+
+--- @class Voxlatro
 --- @field selected_id? string The Area ID of the currently selected card area. Such as 'hand', 'jokers', 'consumeables', 'shop_jokers', 'shop_vouchers', 'shop_booster', 'pack_cards'
 --- @field last_state string? Used in Card:update() to track the last state G.STATE was in. When G.STATE changes, we reset Vars and potentially set it as unsafe to cash out.
 --- @field last_highlighted Card? The last card that was highlighted
-AMA.Amilatro = Object:extend()
+AMA.Voxlatro = Object:extend()
 
--- --- Amilatro Class Methods ---
-function AMA.Amilatro:init()
+-- --- Voxlatro Class Methods ---
+function AMA.Voxlatro:init()
 	self.selected_id = nil
 	self.last_state = nil
 	self.last_highlighted = nil
@@ -39,8 +42,8 @@ end
 -- ---------- Initialization ----------
 local dprint = AMA.dprint
 
----@type Amilatro
-local amy = AMA.Amilatro()
+---@type Voxlatro
+local amy = AMA.Voxlatro()
 amy:init()
 
 
@@ -48,7 +51,7 @@ amy:init()
 
 -- ---------- Local Functions ----------
 
-function AMA.Amilatro:reset_vars()
+function AMA.Voxlatro:reset_vars()
 	if G.kb_selected_area then G.kb_selected_area:unhighlight_all() end
 	G.kb_selected_area = nil
 	self.selected_id = nil
@@ -58,7 +61,7 @@ function AMA.Amilatro:reset_vars()
 	end
 end
 
-function AMA.Amilatro:can(action)
+function AMA.Voxlatro:can(action)
 	local fakebutton = {config = {}}
 	G.FUNCS["can_" .. action](fakebutton)
 	return fakebutton.config.button ~= nil
@@ -67,7 +70,7 @@ end
 --- Returns the number of cards in the current card area
 --- @return number The number of cards in the current card area
 --- @private
-function AMA.Amilatro:get_size()
+function AMA.Voxlatro:get_size()
 	if not G.kb_selected_area then return 0 end
 	if not G.kb_selected_area.cards then return 0 end
 	if not G[self.selected_id] then 
@@ -79,7 +82,7 @@ end
 --- Helper function to update the offset of the current card selection offset
 --- @param value number The value to set the offset to
 --- @private
-function AMA.Amilatro:update_offset(value)
+function AMA.Voxlatro:update_offset(value)
 	G.kb_select_offset = value
 	if G.kb_selected_area and G.kb_selected_area.cards then
 		for i = G.kb_select_offset, G.kb_select_offset + 9 do
@@ -92,7 +95,7 @@ end
 
 --- Adds/Subtracts [amount] from the current card selection offset
 --- @param amount number The amount to add/subtract from the current card selection offset
-function AMA.Amilatro:add_offset(amount)
+function AMA.Voxlatro:add_offset(amount)
 	if not G.kb_selected_area then return end
 	if not G[self.selected_id] then 
 		self:reset_vars()
@@ -114,7 +117,7 @@ end
 
 --- Sets the currently selected card area
 --- @param id string The ID of the card area to select (e.g. 'hand', 'jokers', etc.)
-function AMA.Amilatro:set_selected(id)
+function AMA.Voxlatro:set_selected(id)
 	--- If the target area doesn't exist or is empty:
 	---   - Reset variables if we're already focused on that area
 	---   - Return without doing anything
@@ -136,7 +139,7 @@ end
 
 --- Handles toggling card selection at a given offset index. This is the function called by the `0` - `9` KeyBindings
 --- @param index number The 0-based index from the current scroll offset to select/deselect
-function AMA.Amilatro:toggle_selected(index)
+function AMA.Voxlatro:toggle_selected(index)
 	--- If no area is currently selected:
 	---   - Sets appropriate default area based on game state
 	---   - Returns without selecting if no valid area available
@@ -190,7 +193,7 @@ function AMA.Amilatro:toggle_selected(index)
 	end
 end
 
-function AMA.Amilatro:reroll()
+function AMA.Voxlatro:reroll()
 	if G.STATE == G.STATES.SHOP then
 		if self:can("reroll") then
 			G.FUNCS.reroll_shop({})
@@ -213,7 +216,7 @@ end
 --- @return table table The return value of the function.
 ---  - `state`: boolean If the function was successful or not.
 ---  - `msg`: string message explaining the result of the function.
-function AMA.Amilatro:move_card_to_position(card_number, position)
+function AMA.Voxlatro:move_card_to_position(card_number, position)
 	
 	local number_of_cards = self:get_size()
 
@@ -243,7 +246,7 @@ end
 --- @return table table The return value of the function.
 ---  - `state`: boolean If the function was successful or not.
 ---  - `msg`: string message explaining the result of the function.
-function AMA.Amilatro:move_card_to_limit(card_number, direction)
+function AMA.Voxlatro:move_card_to_limit(card_number, direction)
 
 	if direction == nil then
 		return {state=false, msg="Must Provide Direction (-1/+1)"}
@@ -274,7 +277,7 @@ end
 --- @return table table The return value of the function.
 ---  - `state`: boolean If the function was successful or not.
 ---  - `msg`: string message explaining the result of the function.
-function AMA.Amilatro:move_card_relative(card_number, vector)
+function AMA.Voxlatro:move_card_relative(card_number, vector)
 	-- If there is no selected area set (not G.kb_selected_area) there's nothing to do. Return.
 	if not G.kb_selected_area then return {state=false, msg="No Selected Area"} end
 
@@ -334,7 +337,7 @@ end
 --- @param card_number number The card number to move. 1-based index
 --- @param direction string The direction to move the card in. Valid values are "left" and "right"
 --- @private
-function AMA.Amilatro:_move_card(card_number, direction, align_cards)
+function AMA.Voxlatro:_move_card(card_number, direction, align_cards)
 
 	if not G.kb_selected_area then return {state=false, msg="No Selected Area"} end
 
@@ -378,7 +381,7 @@ end
 -- backspace to skip blind -- DONE OMFFGGGGG
 
 
-function AMA.Amilatro:discard()
+function AMA.Voxlatro:discard()
 	if G.STATE == G.STATES.BLIND_SELECT then
 		-- Can't fake it fully, we need the tag
 		
@@ -433,7 +436,7 @@ end
 -- enter to select from pack
 -- enter to select blind -- done
 
-function AMA.Amilatro:context_use()
+function AMA.Voxlatro:context_use()
 	if G.STATE == G.STATES.ROUND_EVAL then
 		local fakebutton = {config = {}}
 		if G.__vi_safe_to_cash_out then
@@ -523,7 +526,7 @@ function AMA.Amilatro:context_use()
 	end
 end
 
-function AMA.Amilatro:buy_and_use()
+function AMA.Voxlatro:buy_and_use()
 	if not G.kb_selected_area then return end
 	if G.kb_selected_area.highlighted and #G.kb_selected_area.highlighted == 0 then
 		self:toggle_selected(0)
@@ -543,7 +546,7 @@ function AMA.Amilatro:buy_and_use()
 	end
 end
 
-function AMA.Amilatro:sell()
+function AMA.Voxlatro:sell()
 	if G.kb_selected_area and G.kb_selected_area.cards then
 		for i, card in ipairs(G.kb_selected_area.cards) do
 			if card.area and card.area.config.type == "joker" and card.highlighted then
@@ -557,7 +560,7 @@ function AMA.Amilatro:sell()
 	end
 end
 
-function AMA.Amilatro:cycle_selected(amount)
+function AMA.Voxlatro:cycle_selected(amount)
 	local selections = {
 		"hand",
 		"jokers",

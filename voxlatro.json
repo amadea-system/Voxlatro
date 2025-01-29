@@ -1,9 +1,9 @@
 {
-	"id": "amilatro",
-	"name": "Amilatro",
+	"id": "voxlatro",
+	"name": "Voxlatro",
 	"author": ["amadea-system"],
 	"description": "Proper keyboard bindings for Balatro. Might break controller support. Forked from @baltdev `Vilatro` mod, with added GUI elements for easier use",
-	"prefix": "amilatro",
+	"prefix": "voxlatro",
 	"main_file": "vilatro.lua",
 	"version": "0.2.1~Alpha-0001",
 	"dependencies": [

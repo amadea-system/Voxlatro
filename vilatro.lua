@@ -304,7 +304,7 @@ local function handle_selectCard(command)
 
 	local index = command.data.cardNumber or 1
 	-- TODO: Refactor `toggle_selected()` to use 1-based indexing
-	AMA.Amilatro:toggle_selected(index - 1)
+	AMA.Voxlatro:toggle_selected(index - 1)
 	print("Toggled Selected as Requested: " .. index)
 
 	return {
@@ -320,7 +320,7 @@ local function handle_selectMultipleCards(command)
 	local card_numbers = command.data.cardNumbers or {}
 	for i, card_number in ipairs(card_numbers) do
 		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
-		AMA.Amilatro:toggle_selected(card_number - 1)
+		AMA.Voxlatro:toggle_selected(card_number - 1)
 	end
 	print("Toggled Selected as Requested: " .. inspect(card_numbers))
 
@@ -335,7 +335,7 @@ local function handle_invertCardSelection(command)
 	-- exceptCards: list of 1-based indices of cards to avoid inverting. Optional
 
 	local except_cards = command.data.exceptCards or {}
-	local number_of_cards = AMA.Amilatro:get_size()
+	local number_of_cards = AMA.Voxlatro:get_size()
 	if number_of_cards == 0 then
 		AMA.talon_rpc:send_response(command.uuid, {error = "No Cards In Selected Area or No Area Selected (e1)"})
 		return
@@ -363,12 +363,12 @@ local function handle_invertCardSelection(command)
 	for i, card_number in ipairs(cards_to_lower) do
 		-- print("[INVERTING] Lowering Card #" .. card_number)
 		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
-		AMA.Amilatro:toggle_selected(card_number - 1)
+		AMA.Voxlatro:toggle_selected(card_number - 1)
 	end
 	for i, card_number in ipairs(cards_to_raise) do
 		-- print("[INVERTING] Raising Card #" .. card_number)
 		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
-		AMA.Amilatro:toggle_selected(card_number - 1)
+		AMA.Voxlatro:toggle_selected(card_number - 1)
 	end
 
 	return {
@@ -410,19 +410,19 @@ local function handle_moveCard(command)
 	local result = {state=false, msg="Invalid Movement Instructions"}
 	if movement.position then
 		-- Move the card to the specified position
-		result = AMA.Amilatro:move_card_to_position(card_number, movement.position)
+		result = AMA.Voxlatro:move_card_to_position(card_number, movement.position)
 		print("Moved Card #" .. card_number .. " to Position #" .. movement.position)
 	elseif movement.moveToLimit and movement.direction ~= nil then
-		result = AMA.Amilatro:move_card_to_limit(card_number, movement.direction)
+		result = AMA.Voxlatro:move_card_to_limit(card_number, movement.direction)
 		print("Moved Card #" .. card_number .. " to Limit " .. movement.direction)
 
 	elseif movement.vector then
 		-- Move the card a relative amount of places left or right
-		result = AMA.Amilatro:move_card_relative(card_number, movement.vector)
+		result = AMA.Voxlatro:move_card_relative(card_number, movement.vector)
 		print("Moved Card #" .. card_number .. " " .. movement.vector .. " places")
 	elseif movement.swapWith then
 		-- Swap the card with another card
-		-- result = AMA.Amilatro:swap_cards(card_number, movement.swapWith)
+		-- result = AMA.Voxlatro:swap_cards(card_number, movement.swapWith)
 		result = {state=false, msg="Not Implemented"}
 		print("Swapped Card #" .. card_number .. " with Card #" .. movement.swapWith)
 
@@ -710,46 +710,46 @@ end
 --- Table defining the default keybinds for the mod that are only available when no Overlay Menu is open
 local keybinds = {
 	["Inc10"] = function()
-		AMA.Amilatro:add_offset(10) -- 
+		AMA.Voxlatro:add_offset(10) -- 
 	end,
 	["Dec10"] = function()
-		AMA.Amilatro:add_offset(-10) --
+		AMA.Voxlatro:add_offset(-10) --
 	end,
-	["Discard"] = function() AMA.Amilatro:discard() end,
-	["Use"] = function() AMA.Amilatro:context_use() end,
-	["BuyAndUse"] = function() AMA.Amilatro:buy_and_use() end,
+	["Discard"] = function() AMA.Voxlatro:discard() end,
+	["Use"] = function() AMA.Voxlatro:context_use() end,
+	["BuyAndUse"] = function() AMA.Voxlatro:buy_and_use() end,
 	["SelectHand"] = function()
-		AMA.Amilatro:set_selected("hand")
+		AMA.Voxlatro:set_selected("hand")
 	end,
 	["SelectJokers"] = function()
-		AMA.Amilatro:set_selected("jokers")
+		AMA.Voxlatro:set_selected("jokers")
 	end,
 	["SelectConsumeables"] = function()
-		AMA.Amilatro:set_selected("consumeables")
+		AMA.Voxlatro:set_selected("consumeables")
 	end,
 	["SelectShopJokers"] = function()
-		AMA.Amilatro:set_selected("shop_jokers")
+		AMA.Voxlatro:set_selected("shop_jokers")
 	end,
 	["SelectShopVouchers"] = function()
-		AMA.Amilatro:set_selected("shop_vouchers")
+		AMA.Voxlatro:set_selected("shop_vouchers")
 	end,
 	["SelectShopBooster"] = function()
-		AMA.Amilatro:set_selected("shop_booster")
+		AMA.Voxlatro:set_selected("shop_booster")
 	end,
 	["SelectPackCards"] = function()
-		AMA.Amilatro:set_selected("pack_cards")
+		AMA.Voxlatro:set_selected("pack_cards")
 	end,
 	["SelectCycleLeft"] = function()
-		AMA.Amilatro:cycle_selected(-1)
+		AMA.Voxlatro:cycle_selected(-1)
 	end,
 	["SelectCycleRight"] = function()
-		AMA.Amilatro:cycle_selected(1)
+		AMA.Voxlatro:cycle_selected(1)
 	end,
 	["DeselectAll"] = function()
-		AMA.Amilatro:reset_vars()
+		AMA.Voxlatro:reset_vars()
 	end,
-	["Reroll"] = function() AMA.Amilatro:reroll() end,
-	["Sell"] = function() AMA.Amilatro:sell() end,
+	["Reroll"] = function() AMA.Voxlatro:reroll() end,
+	["Sell"] = function() AMA.Voxlatro:sell() end,
 	["SortSuit"] = sort_suit,
 	["SortRank"] = sort_rank,
 	["PeekDeck"] = peek_deck,
@@ -757,7 +757,7 @@ local keybinds = {
 
 for i = 1, 10 do
 	keybinds["Select" .. tostring(i % 10)] = function()
-		AMA.Amilatro:toggle_selected((i + 9) % 10)
+		AMA.Voxlatro:toggle_selected((i + 9) % 10)
 	end
 end
 
@@ -817,9 +817,9 @@ if DEBUG_MODE then
 		key_pressed = "f1",
 		action = function()
 			if info_dump_mode == "off" then
-				AMA.Amilatro.info_dump_mode = "trigger"
+				AMA.Voxlatro.info_dump_mode = "trigger"
 			else
-				AMA.Amilatro.info_dump_mode = "off"
+				AMA.Voxlatro.info_dump_mode = "off"
 			end
 		end
 	}
@@ -828,7 +828,7 @@ if DEBUG_MODE then
 	SMODS.Keybind {
 		key_pressed = "f2",
 		action = function()
-			AMA.Amilatro.info_dump_mode = "once"
+			AMA.Voxlatro.info_dump_mode = "once"
 		end
 	}
 

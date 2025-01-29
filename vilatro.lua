@@ -94,6 +94,12 @@ local function peek_deck()
 	end
 end
 	
+--- This is the Overly Menu that opens up when you click on the deck.
+local function toggle_deck_info(e)
+	if not G.deck then return end
+	G.FUNCS.deck_info(e)
+end
+
 
 -- Talon Functions
 
@@ -103,11 +109,16 @@ end
 local OVERLAY_MENU_TYPES = {
 	options = 1,
 	run_info = 2,
+	deck_info = 3,
+	deck_peek = 4,
 }
 
 local _overlay_menu_functions_tbl = {
-	[OVERLAY_MENU_TYPES.options] = G.FUNCS.options,
-	[OVERLAY_MENU_TYPES.run_info] = G.FUNCS.run_info,
+	[OVERLAY_MENU_TYPES.options] = {G.FUNCS.options, G.FUNCS.exit_overlay_menu},
+	[OVERLAY_MENU_TYPES.run_info] = {G.FUNCS.run_info, G.FUNCS.exit_overlay_menu},
+	[OVERLAY_MENU_TYPES.deck_info] = {toggle_deck_info, G.FUNCS.exit_overlay_menu},
+	[OVERLAY_MENU_TYPES.deck_peek] = {peek_deck, peek_deck},
+
 }
 
 --- Helper function to toggle the different overlay menus
@@ -115,6 +126,12 @@ local _overlay_menu_functions_tbl = {
 --- @param abort_on__no_esc? boolean If true, will abort if `G.OVERLAY_MENU.config.no_esc` is true. Default: true
 --- @return {state: boolean?, msg: string} table The return value of the function. State: True=Opened, False=Closed, nil=menu could not be toggled (E.G., If no_esc, or other issues)
 local function toggle_overlay_menu(menu_type, abort_on__no_esc)
+
+	----------
+	-- We should add in ability to switch by name
+	-- local tab_but = G.OVERLAY_MENU:get_UIE_by_ID('tab_but_'..G.focused_profile)
+	-- G.FUNCS.change_tab(tab_but)G.FUNCS.change_tab(tab_but)
+	----------
 
 	if abort_on__no_esc == nil then abort_on__no_esc = true end
 
@@ -125,11 +142,11 @@ local function toggle_overlay_menu(menu_type, abort_on__no_esc)
 	end
 
 	if G.OVERLAY_MENU then
-		G.FUNCS:exit_overlay_menu()
+		_overlay_menu_functions_tbl[menu_type][2]({})
 		return {state=false, msg="Menu Closed"}
 	end
 
-	_overlay_menu_functions_tbl[menu_type]({})
+	_overlay_menu_functions_tbl[menu_type][1]({})
 	return {state=true, msg="Menu Opened"}
 end
 
@@ -314,6 +331,27 @@ local function handle_toggleOptionsMenu(command)
 		}
 end
 
+local function handle_toggleDeckView(command)
+	local deck_view_mode = command.data.deckViewMode
+	local valid_deck_view_modes = {peek=true, info=true}
+	if not deck_view_mode or not valid_deck_view_modes[deck_view_mode] then
+		-- print(inspect(deck_view_mode))
+		-- print(inspect(deck_view_modes[deck_view_mode]))
+		-- print(inspect(deck_view_modes))
+		-- print(inspect(command.data))
+		AMA.talon_rpc:send_response(command.uuid, {error = "Invalid Deck View Mode: " .. deck_view_mode})
+		return
+	end
+	local menu_type = deck_view_mode == "peek" and OVERLAY_MENU_TYPES.deck_peek or OVERLAY_MENU_TYPES.deck_info
+
+	local new_view_state = toggle_overlay_menu(menu_type)
+	print("Toggled Deck View as Requested: " .. inspect(new_view_state))
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = new_view_state.msg}
+	}
+end
+
 local function handle_changeCycleOption(command)
 		local direction = command.data.direction
 		local result = step_through_option_cycle(direction)
@@ -420,6 +458,11 @@ local command_handlers = {
     toggleOptionsMenu = {
         handler = handle_toggleOptionsMenu,
         data_keys = {},  -- No required keys
+        overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+    },
+	toggleDeckView = {
+		handler = handle_toggleDeckView,
+		data_keys = {deckViewMode = true},
         overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
     },
     changeCycleOption = {

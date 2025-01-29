@@ -100,6 +100,28 @@ local function toggle_deck_info(e)
 	G.FUNCS.deck_info(e)
 end
 
+local function click_on_btn_by_id(id)
+	local button = G.OVERLAY_MENU:get_UIE_by_ID(id)
+	if button then
+		button:click()
+		return true
+	end
+	print("Button " .. id .. " not found!")
+	return false
+end
+
+local function navigate_overlay_menu_back()
+
+	-- If there is no overlay menu open, there's nothing to do. Return.
+	if not G.OVERLAY_MENU then return end
+
+	-- Try to click on the back button
+	if click_on_btn_by_id('overlay_menu_back_button') then return end
+
+	print("Back Button Not Found! Exiting Overlay Menu Directly.")
+	-- If the back button is not found, just exit the menu
+	G.FUNCS.exit_overlay_menu()
+end
 
 -- Talon Functions
 
@@ -479,6 +501,13 @@ local command_handlers = {
             return command.data.direction or command.data.tabNumber
         end
     },
+	menuGoBack = {
+		handler = navigate_overlay_menu_back,
+		data_keys = {},  -- No required keys
+		-- TODO: This should only run if the overlay menu is open
+		overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+	},
+	
     debugCounter = {
         handler = handle_debugCounter,
         data_keys = {},  -- No required keys

@@ -15,6 +15,7 @@ return {
 	["SelectCycleRight"] = "right", --
 	["DeselectAll"] = "/", --
 	["Reroll"] = "tab", --
+	-- ["Reroll"] = "y", --  Less conflict-y w/ DebugPlus
 	["Sell"] = "q", --
 	["Select0"] = "0", --
 	["Select1"] = "1", --

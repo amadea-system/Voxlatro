@@ -60,6 +60,7 @@ end
 
 -- ---------- Constants ----------
 local DEBUG_MODE = true
+local ENABLE_ARBITRARY_EVAL = true  -- Only enable this if you know what you are doing. It is a security risk.
 
 -- ---------- Local Variables ----------
 

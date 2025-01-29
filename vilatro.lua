@@ -78,6 +78,7 @@ local function sort_rank()
 	G.FUNCS.sort_hand_value()
 end
 
+--- This triggers the deck preview UIBox. This is the UI Element that shows when you move the cursor over the deck.
 local function peek_deck()
 	if not G.deck then return end
 	if not G.deck_preview and not G.OVERLAY_MENU then

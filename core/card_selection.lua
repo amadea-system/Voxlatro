@@ -28,11 +28,16 @@ function AMA.Amilatro:init()
 	self.last_state = nil
 	self.last_highlighted = nil
 
+    -- --- Debug Variables ---
+    self.last_card_dumped = 0 -- nil
+    self.info_dump_mode = "off"  -- Valid Values: "off", "trigger", "once"
+    self.last_card_info_dump_time = love.timer.getTime()  -- Units: Seconds
+    self.dump_card_info_interval = 0.5  -- Units: Seconds
 
 end
 
 -- ---------- Initialization ----------
--- local dprint = AMA.dprint
+local dprint = AMA.dprint
 
 ---@type Amilatro
 local amy = AMA.Amilatro()
@@ -59,6 +64,9 @@ function AMA.Amilatro:can(action)
 	return fakebutton.config.button ~= nil
 end
 
+--- Returns the number of cards in the current card area
+--- @return number The number of cards in the current card area
+--- @private
 function AMA.Amilatro:get_size()
 	if not G.kb_selected_area then return 0 end
 	if not G.kb_selected_area.cards then return 0 end
@@ -68,6 +76,9 @@ function AMA.Amilatro:get_size()
 	return #G.kb_selected_area.cards
 end
 
+--- Helper function to update the offset of the current card selection offset
+--- @param value number The value to set the offset to
+--- @private
 function AMA.Amilatro:update_offset(value)
 	G.kb_select_offset = value
 	if G.kb_selected_area and G.kb_selected_area.cards then

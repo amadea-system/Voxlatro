@@ -52,7 +52,7 @@ if err then
 end
 
 -- ---------- Constants ----------
-local ENABLE_ARBITRARY_EVAL = false  -- Only enable this if you know what you are doing. It is a security risk.
+local DEBUG_MODE = true
 
 -- ---------- Local Variables ----------
 
@@ -583,6 +583,66 @@ end
 register_keybinds(keybinds, true)
 register_keybinds(always_available_keybinds, false)
 
+
+if DEBUG_MODE then
+
+	--    [SMODS.Keybind · Steamodded/smods Wiki](https://github.com/Steamodded/smods/wiki/SMODS.Keybind/)
+	--    [KeyConstant - LOVE](https://love2d.org/wiki/KeyConstant)
+
+	-- ----- Trigger Restart Keybinds -----
+	-- Holding the `m` key is annoying, as it ends up spamming VSCode with mmmmmm.
+	-- So I am adding a different keybind that does not need to be held to restart the game.
+
+	local restart_keys = { "f10" }
+	for i, kb_key in ipairs(restart_keys) do
+		SMODS.Keybind {
+			key_pressed = kb_key,
+			action = function() SMODS.restart_game() end
+		}
+	end
+
+	-- Debugging Misc Func
+	-- SMODS.Keybind {
+	-- 	key_pressed = "f3",
+	-- 	action = function()
+	-- 		print("Testing Random Code")
+	-- 	end
+	-- }
+
+	-- ----- Debug Card Info Dump Keybinds -----
+
+	-- Toggle Trigger / Off
+	SMODS.Keybind {
+		key_pressed = "f1",
+		action = function()
+			if info_dump_mode == "off" then
+				AMA.Amilatro.info_dump_mode = "trigger"
+			else
+				AMA.Amilatro.info_dump_mode = "off"
+			end
+		end
+	}
+
+	-- Set to Trigger Once
+	SMODS.Keybind {
+		key_pressed = "f2",
+		action = function()
+			AMA.Amilatro.info_dump_mode = "once"
+		end
+	}
+
+	-- ----- Talon Keybinds -----
+
+	-- Run Talon Command via File RPC (Even when `G.OVERLAY_MENU`)
+	-- SMODS.Keybind {
+	-- 	-- key = "vilatro_talon_print_clipboard",
+	-- 	key_pressed = "f8",
+	-- 	action = function()
+	-- 		run_talon_RPC_command()
+	-- 	end
+	-- }
+	
+end
 
 
 -- UI stuff

@@ -329,6 +329,67 @@ local function handle_selectMultipleCards(command)
 		reflection = {type = command.data.type, value = card_numbers}
 		}
 end
+local function handle_moveCard(command)
+	-- TODO: I'm very much unhappy with the way the Command Data is structured. We should refactor this!!!
+	
+	-- Expected Command Data Format:
+	-- cardNumber: 1-based index of card to move. Required
+	-- movement: Table. Required. This table will contain the instructions on how to move the card. There are several ways to specify how to move the card:
+	--                       Move the card to the specified position. Keys: `position`
+	--                       Move the card a relative amount of places left or right. Keys: `vector`
+	--                       Swap the card with another card. Keys: `swapWith`
+	-- -- Keys: (one must be provided)
+	--   -- position: 1-based index of the card to move the card to. Optional.
+	--   -- vector: number of places to move the card. Optional.
+	--   -- swapWith: 1-based index of the card to swap the card with. Optional.
+
+	print("Move Card Command Received: " .. inspect(command, {depth=5}))
+
+	local card_number = command.data.cardNumber
+	local movement = command.data.movement
+	local move_type = command.data.moveType
+
+	if not card_number or not movement then
+		AMA.talon_rpc:send_response(command.uuid, {error = "Missing Required Keys in Move Card Command"})
+		return
+	end
+
+	if not movement.position and not movement.vector and not movement.swapWith and movement.moveToLimit and not movement.direction then
+		AMA.talon_rpc:send_response(command.uuid, {error = "Missing Required Keys in Move Card Command: `movement` Dict "})
+		return
+	end
+
+	local result = {state=false, msg="Invalid Movement Instructions"}
+	if movement.position then
+		-- Move the card to the specified position
+		result = AMA.Amilatro:move_card_to_position(card_number, movement.position)
+		print("Moved Card #" .. card_number .. " to Position #" .. movement.position)
+	elseif movement.moveToLimit and movement.direction ~= nil then
+		result = AMA.Amilatro:move_card_to_limit(card_number, movement.direction)
+		print("Moved Card #" .. card_number .. " to Limit " .. movement.direction)
+
+	elseif movement.vector then
+		-- Move the card a relative amount of places left or right
+		result = AMA.Amilatro:move_card_relative(card_number, movement.vector)
+		print("Moved Card #" .. card_number .. " " .. movement.vector .. " places")
+	elseif movement.swapWith then
+		-- Swap the card with another card
+		-- result = AMA.Amilatro:swap_cards(card_number, movement.swapWith)
+		result = {state=false, msg="Not Implemented"}
+		print("Swapped Card #" .. card_number .. " with Card #" .. movement.swapWith)
+
+	end
+
+	if not result.state then
+		AMA.talon_rpc:send_response(command.uuid, {warning = result.msg})
+		return
+	end
+
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = result.msg}
+	}
+end
 
 local function handle_toggleRunInfo(command)
 		-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true

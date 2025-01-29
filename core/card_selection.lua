@@ -206,6 +206,173 @@ function AMA.Amilatro:reroll()
 	end
 end
 
+
+--- Moves the specified card to the specified position. (Card number references the current area)
+--- @param card_number number The card number to move. 1-based index
+--- @param position number The position to move the card to. 1-based index
+--- @return table table The return value of the function.
+---  - `state`: boolean If the function was successful or not.
+---  - `msg`: string message explaining the result of the function.
+function AMA.Amilatro:move_card_to_position(card_number, position)
+	
+	local number_of_cards = self:get_size()
+
+	if number_of_cards == 0 then
+		return {state=false, msg="No Cards In Selected Area"}
+	end
+	if card_number < 1 or card_number > number_of_cards then
+		return {state=false, msg="Invalid Card Number: " .. card_number}
+	end
+
+	if position < 1 or position > number_of_cards then
+		return {state=false, msg="Invalid Destination: " .. position}
+	end
+
+	-- If the destination is the same as the current card, then there's nothing to do. Return.
+	if position == card_number then
+		return {state=false, msg="Destination Is Same As Current Card"}
+	end
+
+	local vector = position - card_number
+	return self:move_card_relative(card_number, vector)
+end
+
+--- Moves the specified card all the way to the left or right edge of the current card area
+--- @param card_number number The card number to move. 1-based index
+--- @param direction number The direction to move the card in. negative values will move the card to the left, positive values will move the card to the right.
+--- @return table table The return value of the function.
+---  - `state`: boolean If the function was successful or not.
+---  - `msg`: string message explaining the result of the function.
+function AMA.Amilatro:move_card_to_limit(card_number, direction)
+
+	if direction == nil then
+		return {state=false, msg="Must Provide Direction (-1/+1)"}
+	end
+
+	local number_of_cards = self:get_size()
+
+	if number_of_cards == 0 then
+		return {state=false, msg="No Cards In Selected Area"}
+	end
+
+	if card_number < 1 or card_number > number_of_cards then
+		return {state=false, msg="Invalid Card Number: " .. card_number}
+	end
+
+	if direction < 0 then
+		return self:move_card_to_position(card_number, 1)
+	elseif direction > 0 then
+		return self:move_card_to_position(card_number, number_of_cards)
+	end
+
+	return {state=false, msg="Invalid Direction: " .. direction}
+end
+
+--- Moves the specified card to the specified position. (Card number references the current area)
+--- @param card_number number The card number to move. 1-based index
+--- @param vector number The vector to move the card by. Positive values will move the card to the right, negative values will move the card to the left.
+--- @return table table The return value of the function.
+---  - `state`: boolean If the function was successful or not.
+---  - `msg`: string message explaining the result of the function.
+function AMA.Amilatro:move_card_relative(card_number, vector)
+	-- If there is no selected area set (not G.kb_selected_area) there's nothing to do. Return.
+	if not G.kb_selected_area then return {state=false, msg="No Selected Area"} end
+
+	-- If the selected area doesn't exist. then it's likly the game has changed to a state where the selected area is no longer present.
+	-- Reset state variables and return.
+	if not G[self.selected_id] then 
+		self:reset_vars()
+		return {state=false, msg="Selected Area Does Not Exist"}
+	end
+
+	local number_of_cards = self:get_size()
+	-- Since this command will only ever be called via the RPC, ignore the offset
+
+	if number_of_cards == 0 then
+		return {state=false, msg="No Cards In Selected Area"}
+	end
+
+	if card_number < 1 or card_number > number_of_cards then
+		return {state=false, msg="Invalid Card Number: " .. card_number}
+	end
+
+	-- if vector > number_of_cards or vector < -number_of_cards then
+	-- 	return {state=false, msg="Invalid Vector: " .. vector}
+	-- end
+
+	-- Perform the move
+	-- local card = G.kb_selected_area.cards[card_number]
+	-- local original_card_rank = card.rank
+	-- local original_other_card_rank = card.area.cards[card.rank].rank
+
+	-- card.rank = card.rank + vector
+	-- card.area.cards[card.rank].rank = card.rank + vector
+	-- table.sort(card.area.cards, function (a, b) return a.rank < b.rank end)
+	-- card.area:align_cards()
+
+	-- print("Card Moved! Card #" .. card_number .. " Moved To #" .. card.rank .. " (Original Rank: " .. original_card_rank .. ")")
+	-- print("                    Other Moved To #" .. card.area.cards[card.rank].rank .. " (Original Rank: " .. original_other_card_rank .. ")")
+
+	local direction = vector > 0 and "right" or "left"
+	local ret = nil
+	for i = 0, math.abs(vector) - 1 do
+		-- Only align cards at the end of the move
+		local sign = vector > 0 and 1 or (vector == 0 and 0 or -1)
+		local card_number = card_number + (i * sign)
+		ret = self:_move_card(card_number, direction, i == (math.abs(vector)-1))
+		if not ret.state then
+			print("Error Moving Card Partway! " .. ret.msg)
+			return ret
+		end
+	end
+	return ret or {state=false, msg="Unexpected Error"}
+end
+
+
+
+--- Moves the specified card in the specified direction by one
+--- @param card_number number The card number to move. 1-based index
+--- @param direction string The direction to move the card in. Valid values are "left" and "right"
+--- @private
+function AMA.Amilatro:_move_card(card_number, direction, align_cards)
+
+	if not G.kb_selected_area then return {state=false, msg="No Selected Area"} end
+
+	-- If the selected area doesn't exist. then it's likly the game has changed to a state where the selected area is no longer present.
+	-- Reset state variables and return.
+	if not G[self.selected_id] then 
+		self:reset_vars()
+		return {state=false, msg="Selected Area Does Not Exist"}
+	end
+
+	local new_card_rank = (direction == 'left' and {card_number - 1} or {card_number + 1})[1]
+	if new_card_rank < 1 or new_card_rank > #G.kb_selected_area.cards then
+		return {state=false, msg="Can not move card outside of bounds"}
+	end
+
+	local focused = G.kb_selected_area.cards[card_number]
+	-- print("Moving Card #" .. card_number .. " " .. direction .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
+	if focused == nil then
+		return {state=false, msg="Card @ " .. card_number .. " does not exist"}
+	end
+
+	-- TODO: Optimize This Section
+	if direction == 'left' and focused.rank > 1 then
+		focused.rank = focused.rank - 1 
+		focused.area.cards[focused.rank].rank = focused.rank + 1
+		table.sort(focused.area.cards, function (a, b) return a.rank < b.rank end)
+		focused.area:align_cards()
+		-- self:update_cursor()
+	elseif direction == 'right' and focused.rank < #focused.area.cards then
+		focused.rank = focused.rank + 1 
+		focused.area.cards[focused.rank].rank = focused.rank - 1
+		table.sort(focused.area.cards, function (a, b) return a.rank < b.rank end)
+		focused.area:align_cards()
+		-- self:update_cursor()
+	end
+	return {state=true, msg="Card Moved"}
+end
+
 -- backspace to skip pack -- done
 -- backspace for next round -- done
 -- backspace to skip blind -- DONE OMFFGGGGG

@@ -302,32 +302,32 @@ end
 
 local function handle_selectCard(command)
 
-		local index = command.data.cardNumber or 1
-		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
+	local index = command.data.cardNumber or 1
+	-- TODO: Refactor `toggle_selected()` to use 1-based indexing
 	AMA.Amilatro:toggle_selected(index - 1)
-		print("Toggled Selected as Requested: " .. index)
+	print("Toggled Selected as Requested: " .. index)
 
 	return {
-			type = "no-action",
+		type = "no-action",
 		reflection = {type = command.data.type, value = index}
-		}
+	}
 end
-	
-local function handle_selectMultipleCards(command)
-		-- Expected Command Data Format:
-		-- cardNumbers: list of 1-based indices of cards to select
 
-		local card_numbers = command.data.cardNumbers or {}
-		for i, card_number in ipairs(card_numbers) do
-			-- TODO: Refactor `toggle_selected()` to use 1-based indexing
+local function handle_selectMultipleCards(command)
+	-- Expected Command Data Format:
+	-- cardNumbers: list of 1-based indices of cards to select
+
+	local card_numbers = command.data.cardNumbers or {}
+	for i, card_number in ipairs(card_numbers) do
+		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
 		AMA.Amilatro:toggle_selected(card_number - 1)
-		end
-		print("Toggled Selected as Requested: " .. inspect(card_numbers))
+	end
+	print("Toggled Selected as Requested: " .. inspect(card_numbers))
 
 	return {
-			type = "no-action",
+		type = "no-action",
 		reflection = {type = command.data.type, value = card_numbers}
-		}
+	}
 end
 
 local function handle_invertCardSelection(command)
@@ -379,7 +379,7 @@ end
 
 local function handle_moveCard(command)
 	-- TODO: I'm very much unhappy with the way the Command Data is structured. We should refactor this!!!
-	
+
 	-- Expected Command Data Format:
 	-- cardNumber: 1-based index of card to move. Required
 	-- movement: Table. Required. This table will contain the instructions on how to move the card. There are several ways to specify how to move the card:
@@ -440,26 +440,26 @@ local function handle_moveCard(command)
 end
 
 local function handle_toggleRunInfo(command)
-		-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true
-		-- TODO: !Critical! Prevent this from running when a Run is not in progress.
-		local new_menu_state = toggle_overlay_menu(OVERLAY_MENU_TYPES.run_info)
-		print("Toggled Run Info as Requested: " .. inspect(new_menu_state))
+	-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true
+	-- TODO: !Critical! Prevent this from running when a Run is not in progress.
+	local new_menu_state = toggle_overlay_menu(OVERLAY_MENU_TYPES.run_info)
+	print("Toggled Run Info as Requested: " .. inspect(new_menu_state))
 
 	return {
-			type = "no-action",
+		type = "no-action",
 		reflection = {type = command.data.type, value = new_menu_state.msg}
-		}
+	}
 end
 
 local function handle_toggleOptionsMenu(command)
-		-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true
-		local new_menu_state = toggle_overlay_menu(OVERLAY_MENU_TYPES.options)
-		print("Toggled Options Menu as Requested: " .. inspect(new_menu_state))
+	-- TODO: Refactor keybinding generation code to allow for actions while `G.OVERLAY_MENU` is true
+	local new_menu_state = toggle_overlay_menu(OVERLAY_MENU_TYPES.options)
+	print("Toggled Options Menu as Requested: " .. inspect(new_menu_state))
 
 	return {
-			type = "no-action",
+		type = "no-action",
 		reflection = {type = command.data.type, value = new_menu_state.msg}
-		}
+	}
 end
 
 local function handle_toggleDeckView(command)
@@ -484,46 +484,46 @@ local function handle_toggleDeckView(command)
 end
 
 local function handle_changeCycleOption(command)
-		local direction = command.data.direction
-		local result = step_through_option_cycle(direction)
-		if not result.state then
+	local direction = command.data.direction
+	local result = step_through_option_cycle(direction)
+	if not result.state then
 		AMA.talon_rpc:send_response(command.uuid, {warning = result.msg})
-			return
-		end
-		print("Cycled Option Menu via RPC Command: " .. inspect(result))
+		return
+	end
+	print("Cycled Option Menu via RPC Command: " .. inspect(result))
 
 	return {
-			type = "no-action",
+		type = "no-action",
 		reflection = {type = command.data.type, value = result.msg}
-		}
+	}
 end
 
 local function handle_changeTab(command)
-		local direction = command.data.direction
-		local tab_number = command.data.tabNumber
-		local result = change_overlay_menu_tab(direction, tab_number)
-		if not result.state then
+	local direction = command.data.direction
+	local tab_number = command.data.tabNumber
+	local result = change_overlay_menu_tab(direction, tab_number)
+	if not result.state then
 		AMA.talon_rpc:send_response(command.uuid, {warning = result.msg})
-			return
-		end
+		return
+	end
 
-		print("Changed Tab via RPC Command: " .. inspect(result))
+	print("Changed Tab via RPC Command: " .. inspect(result))
 
 	return {
-			type = "no-action",
+		type = "no-action",
 		reflection = {type = command.data.type, value = result.msg}
-		}
+	}
 end
 
 local function handle_debugCounter(command)
-		local cb_debug_counter = 42
-		print("Received Debug Counter Command from Talon. Responding With Debug Counter: " .. cb_debug_counter)
+	local cb_debug_counter = 42
+	print("Received Debug Counter Command from Talon. Responding With Debug Counter: " .. cb_debug_counter)
 	cb_debug_counter = cb_debug_counter + 1
 	return {type = "debug-counter", value = cb_debug_counter}
 end
 
 local function handle_requestTimedOut(command)
-		print("WARNING! Did not respond to Talon Request in time!!")
+	print("WARNING! Did not respond to Talon Request in time!!")
 	return nil
 end
 
@@ -604,8 +604,8 @@ local command_handlers = {
 	toggleDeckView = {
 		handler = handle_toggleDeckView,
 		data_keys = {deckViewMode = true},
-        overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
-    },
+		overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+	},
     changeCycleOption = {
         handler = handle_changeCycleOption,
         data_keys = {direction = true},
@@ -635,8 +635,8 @@ local command_handlers = {
 	evalLua = {
 		handler = handle_evalLua,
 		data_keys = {luaCode = true},
-        overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
-    },
+		overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+	},
     requestTimedOut = {
         handler = handle_requestTimedOut,
         data_keys = {},  -- No required keys
@@ -646,59 +646,59 @@ local command_handlers = {
 
 -- Main function to handle the RPC command
 local function run_talon_RPC_command()
-    local command = AMA.talon_rpc:read_request()
-    if not command then
-        -- For now, no need to log this here. As it is currently logged in the Talon_RPC:read_request() function
+	local command = AMA.talon_rpc:read_request()
+	if not command then
+		-- For now, no need to log this here. As it is currently logged in the Talon_RPC:read_request() function
 		-- print("ERROR! Talon RPC Triggered but no data was received")
 		return
-    end
+	end
 
-    -- Check for necessary `data` and `type` keys
-    if not command.data or not command.data.type then
-        local msg = not command.data and "Missing `data` key in RPC Command" or "Missing `data.type` key in RPC Command"
+	-- Check for necessary `data` and `type` keys
+	if not command.data or not command.data.type then
+		local msg = not command.data and "Missing `data` key in RPC Command" or "Missing `data.type` key in RPC Command"
 		AMA.talon_rpc:send_response(command.uuid, {error = msg})
 		print("ERROR! " .. msg .. ": " .. inspect(command))
 		return
 	end
 
-    local handler_entry = command_handlers[command.data.type]
-    if not handler_entry then
-        AMA.talon_rpc:send_response(command.uuid, {error = "Unknown Balatro RPC Command: " .. command.data.type})
-        return
-    end
+	local handler_entry = command_handlers[command.data.type]
+	if not handler_entry then
+		AMA.talon_rpc:send_response(command.uuid, {error = "Unknown Balatro RPC Command: " .. command.data.type})
+		return
+	end
 
-    -- Check overlay menu condition
-    if handler_entry.overlay_menu == RequiredOverlayMenuState.FORBID and G.OVERLAY_MENU then
-        AMA.talon_rpc:send_response(command.uuid, {warning = "Cannot use `" .. command.data.type .. "` command while in Overlay Menu"})
-        return
-    elseif handler_entry.overlay_menu == RequiredOverlayMenuState.REQUIRE and not G.OVERLAY_MENU then
-        AMA.talon_rpc:send_response(command.uuid, {warning = "Command `" .. command.data.type .. "` requires an active Overlay Menu"})
-        return
-    end
+	-- Check overlay menu condition
+	if handler_entry.overlay_menu == RequiredOverlayMenuState.FORBID and G.OVERLAY_MENU then
+		AMA.talon_rpc:send_response(command.uuid, {warning = "Cannot use `" .. command.data.type .. "` command while in Overlay Menu"})
+		return
+	elseif handler_entry.overlay_menu == RequiredOverlayMenuState.REQUIRE and not G.OVERLAY_MENU then
+		AMA.talon_rpc:send_response(command.uuid, {warning = "Command `" .. command.data.type .. "` requires an active Overlay Menu"})
+		return
+	end
 
 	-- print("Overlay Menu Status> handler_entry.overlay_menu: " .. handler_entry.overlay_menu .. " G.OVERLAY_MENU: " .. tostring(G.OVERLAY_MENU) .. " not G.OVERLAY_MENU: " .. tostring(not G.OVERLAY_MENU))
 
-    -- Validate required keys in the command data
-    for key, is_required in pairs(handler_entry.data_keys) do
-        if is_required and not command.data[key] then
-            AMA.talon_rpc:send_response(command.uuid, {error = "Missing required key `" .. key .. "` in RPC Command"})
-            print("ERROR! Missing required key `" .. key .. "` in RPC Command: " .. inspect(command))  -- This print statement is redundant.
-            return
-        end
-    end
+	-- Validate required keys in the command data
+	for key, is_required in pairs(handler_entry.data_keys) do
+		if is_required and not command.data[key] then
+			AMA.talon_rpc:send_response(command.uuid, {error = "Missing required key `" .. key .. "` in RPC Command"})
+			print("ERROR! Missing required key `" .. key .. "` in RPC Command: " .. inspect(command))  -- This print statement is redundant.
+			return
+		end
+	end
 
-    -- Check additional conditions (if provided)
-    if handler_entry.conditions and not handler_entry.conditions(command) then
-        AMA.talon_rpc:send_response(command.uuid, {warning = "Unable to run command. Conditions for command `" .. command.data.type .. "` failed"})
-        return  -- Ignore the command if the condition function returns false
-    end
+	-- Check additional conditions (if provided)
+	if handler_entry.conditions and not handler_entry.conditions(command) then
+		AMA.talon_rpc:send_response(command.uuid, {warning = "Unable to run command. Conditions for command `" .. command.data.type .. "` failed"})
+		return  -- Ignore the command if the condition function returns false
+	end
 
-    -- Call the handler function for the command
+	-- Call the handler function for the command
 	-- TODO: Be able to handle more than just payload. Handle any Warnings/Errors as well.
-    local payload = handler_entry.handler(command)
-    if not payload then
+	local payload = handler_entry.handler(command)
+	if not payload then
 		payload = {type = "no-action", reflection = {type = command.data.type, value = "Default Canned Response"}}
-    end
+	end
 	AMA.talon_rpc:send_response(command.uuid, {payload = payload})
 
 end
@@ -769,14 +769,14 @@ local always_available_keybinds = {
 
 local function register_keybinds(keybinding_table, block_by_overlay_menu)
 	for key, action in pairs(keybinding_table) do
-	if mod.config[key] ~= false then
-		SMODS.Keybind {
-			key = "vilatro_binding_" .. key,
-			key_pressed = mod.config[key],
-			action = function()
+		if mod.config[key] ~= false then
+			SMODS.Keybind {
+				key = "vilatro_binding_" .. key,
+				key_pressed = mod.config[key],
+				action = function()
 					if not G.OVERLAY_MENU or not block_by_overlay_menu then action() end
-			end
-		}
+				end
+			}
 		end
 	end
 end

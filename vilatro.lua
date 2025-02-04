@@ -555,6 +555,33 @@ local function handle_evalLua(command)
 	}
 end
 
+--- Generic Simple Action Handler
+local function handle_voxlatroAction(command)
+	local action = command.data.action
+	local outcome = nil
+	if action == "cashOut" then
+		outcome = AMA.Voxlatro:use__cash_out()
+	elseif action == "playHand" then
+		outcome = AMA.Voxlatro:use__play_hand()
+	elseif action == "selectBlind" then
+		outcome = AMA.Voxlatro:use__select_blind()
+	elseif action == "buyOrRedeemOrUse" then
+		outcome = AMA.Voxlatro:use__buy_or_use_or_redeem()
+	else 
+		AMA.talon_rpc:send_response(command.uuid, {error = "Unknown Action: " .. action})
+		return
+	end
+
+	if not outcome then
+		AMA.talon_rpc:send_response(command.uuid, {warning = "Action Failed with unknown error (nil outcome): " .. action})
+		return
+	end
+
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = outcome}
+	}
+end
 
 --- Enum for overlay menu states
 --- @enum RequiredOverlayMenuState
@@ -591,6 +618,11 @@ local command_handlers = {
         data_keys = {cardNumber = true, movement = true},
         overlay_menu = RequiredOverlayMenuState.FORBID
     },
+	generalAction = {
+		handler = handle_voxlatroAction,
+		data_keys = {action = true},
+		overlay_menu = RequiredOverlayMenuState.FORBID
+	},
     toggleRunInfo = {
         handler = handle_toggleRunInfo,
         data_keys = {},  -- No required keys

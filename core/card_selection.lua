@@ -438,6 +438,140 @@ function AMA.Voxlatro:context_discard_or_skip()
 	self:reset_vars()
 end
 
+--- Triggers the same action as the `Cash Out` GUI Button
+--- Only activates when the game is in the correct state.
+--- @return table table The outcome of the action
+---  - `activated`: boolean True if the action was successful, false otherwise
+---  - `state`: boolean True if the context was valid to try to trigger the action, false otherwise
+function AMA.Voxlatro:use__cash_out()
+	if G.STATE == G.STATES.ROUND_EVAL then
+		local fakebutton = {config = {}}
+		if G.__vi_safe_to_cash_out then
+			G.FUNCS.cash_out(fakebutton)
+			G.__vi_safe_to_cash_out = false
+			return {activated=true, state=true, msg="Cash Out Triggered"}
+		end
+		return {activated=false, state=true, msg="Still Waiting for Round Eval to Finish"}
+	end
+	return {activated=false, state=false, msg="Not in Round Eval State"}
+end
+
+--- Plays the highlighted cards in the current card area
+--- @return table table The outcome of the action
+---  - `activated`: boolean True if the action was successful, false otherwise
+---  - `state`: boolean True if the context was valid to try to trigger the action, false otherwise
+function AMA.Voxlatro:use__play_hand()
+	if not G.kb_selected_area then return {activated=false, state=false, msg="No Selected Card Area"} end
+	if G.STATE == G.STATES.SELECTING_HAND and G.hand and G.kb_selected_area == G.hand then
+		if self:can("play") then
+			G.FUNCS.play_cards_from_highlighted()
+			self:reset_vars()
+			return {activated=true, state=true, msg="Playing Cards"}
+		end
+		return {activated=false, state=true, msg="Can Not Play Cards"}
+	end
+	return {activated=false, state=false, msg="Not in Hand Selection State or No Hand Selected or Selected Area is Not Hand"}
+end
+
+--- Triggers the same action as the `Select Blind` GUI Button
+--- Only activates when the game is in the correct state. Automatically selects the correct blind.
+--- @return table table The outcome of the action
+---  - `activated`: boolean True if the action was successful, false otherwise
+---  - `state`: boolean True if the context was valid to try to trigger the action, false otherwise
+function AMA.Voxlatro:use__select_blind()
+	if G.STATE == G.STATES.BLIND_SELECT then
+		-- Can't fake it, we need the real button
+		local current_blind = G.GAME.blind_on_deck or 'Small'
+		local blind_index = (current_blind == 'Small' and 1) or (current_blind == 'Big' and 2) or 3
+		local button = G.blind_select.UIRoot.children[1].children[blind_index].config.object:get_UIE_by_ID('select_blind_button')
+		G.FUNCS.select_blind(button)
+		return {activated=true, state=true, msg="Selected Blind"}
+	end
+	return {activated=false, state=false, msg="Not in Blind Selection State"}
+end
+
+
+--- Multi-Function Helper that does the following:
+--- Potential Actions:
+---  - Use a Highlighted Consumeable Card
+---  - Buy a Highlighted Card from the Shop
+---  - Open a Highlighted Booster from the Shop
+---  - Redeem a Highlighted Voucher from the Shop
+---  - Select/Use a Highlighted Card from the Pack
+--- @return table table The outcome of the action
+---  - `activated`: boolean True if the action was successful, false otherwise. This is mostly for directly calling this function.
+---  - `state`: boolean True if the context was valid to try to trigger the action, false otherwise. This is for use in the context_use() function.
+function AMA.Voxlatro:use__buy_or_use_or_redeem()
+	if not G.kb_selected_area then return {activated=false, state=false, msg="No Selected Card Area"} end
+	if G.jokers and G.kb_selected_area == G.jokers then return {activated=false, state=false, msg="Selected Area is Jokers. Can not Buy/Use/Redeem in this Card Area"} end
+	if G.consumeables and G.kb_selected_area == G.consumeables then
+		if G.kb_selected_area.highlighted and
+			G.kb_selected_area.highlighted[1] and
+			G.kb_selected_area.highlighted[1]:can_use_consumeable()
+		then
+			G.FUNCS.use_card {
+				config = {ref_table = G.kb_selected_area.highlighted[1]}
+			}
+			self:reset_vars()
+			return {activated=true, state=true, msg="Using Consumeable Card"}
+		end
+		-- TODO: Do we need to return here? We definitely need to return if the card can't be used.
+	end
+
+	if G.STATE == G.STATES.SHOP and G.kb_selected_area == G.shop_jokers or G.kb_selected_area == G.shop_vouchers or G.kb_selected_area == G.shop_booster then
+		local card = G.kb_selected_area.highlighted and G.kb_selected_area.highlighted[1]
+		if not card then return {activated=false, state=true, msg="No Highlighted Shop Card/Voucher/Booster"} end
+		
+		local button = {config = {ref_table = card}}
+		
+		if card.area == G.shop_booster then
+			G.FUNCS.can_open(button)
+			if button.config.button then
+				G.FUNCS.use_card(button)
+				self:reset_vars()
+				return {activated=true, state=true, msg="Opening Booster"}
+			end
+			-- TODO: Do we need to return here?
+		end
+		
+		if card.area == G.shop_vouchers then
+			G.FUNCS.can_redeem(button)
+			if button.config.button then
+				G.FUNCS.use_card(button)
+				self:reset_vars()
+				return	{activated=true, state=true, msg="Redeeming Voucher"}
+			end
+			-- TODO: Do we need to return here?
+		end
+		
+		if card.area == G.shop_jokers then
+			G.FUNCS.can_buy(button)
+			if button.config.button then
+				G.FUNCS.buy_from_shop(button)
+				return	{activated=true, state=true, msg="Buying Joker"}
+			end
+			-- TODO: Do we need to return here?
+		end
+		-- TODO: Do we need to return here?
+	end
+	
+	if G.kb_selected_area == G.pack_cards then
+		local card = G.kb_selected_area.highlighted and G.kb_selected_area.highlighted[1]
+		if not card then return {activated=false, state=true, msg="No Highlighted Card in Pack"} end
+		if card.ability.consumeable and not card:can_use_consumeable() then return {activated=false, state=true, msg="Can Not Use Consumeable Card"} end
+		
+		local button = {config = {ref_table = card}}
+		G.FUNCS.can_select_card(button)
+		if button.config.button then
+			G.FUNCS.use_card(button)
+			self:reset_vars()
+			return {activated=true, state=true, msg="Selecting Card from Pack"}
+		end
+	end
+	return {activated=false, state=false, msg="Unknown Context..."}
+end
+
+
 -- enter to select from pack
 -- enter to select blind -- done
 

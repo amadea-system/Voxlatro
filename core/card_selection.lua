@@ -589,93 +589,110 @@ end
 ---  - Redeem a Highlighted Voucher from the Shop
 ---  - Select/Use a Highlighted Card from the Pack
 function AMA.Voxlatro:context_use()
-	if G.STATE == G.STATES.ROUND_EVAL then
-		local fakebutton = {config = {}}
-		if G.__vi_safe_to_cash_out then
-			G.FUNCS.cash_out(fakebutton)
-			G.__vi_safe_to_cash_out = false
-		end
-		return
-	end
-	if G.STATE == G.STATES.BLIND_SELECT then
-		-- Can't fake it, we need the real button
-		local current_blind = G.GAME.blind_on_deck or 'Small'
-		local blind_index = (current_blind == 'Small' and 1) or (current_blind == 'Big' and 2) or 3
-		local button = G.blind_select.UIRoot.children[1].children[blind_index].config.object:get_UIE_by_ID('select_blind_button')
-		G.FUNCS.select_blind(button)
-		return
-	end
+
+	-- if G.STATE == G.STATES.ROUND_EVAL then
+		-- local fakebutton = {config = {}}
+		-- if G.__vi_safe_to_cash_out then
+		-- 	G.FUNCS.cash_out(fakebutton)
+		-- 	G.__vi_safe_to_cash_out = false
+		-- end
+		-- return
+	-- end
+	local outcome = self:use__cash_out()
+	if outcome.state then return end
+
+	-- if G.STATE == G.STATES.BLIND_SELECT then
+	-- 	-- Can't fake it, we need the real button
+	-- 	local current_blind = G.GAME.blind_on_deck or 'Small'
+	-- 	local blind_index = (current_blind == 'Small' and 1) or (current_blind == 'Big' and 2) or 3
+	-- 	local button = G.blind_select.UIRoot.children[1].children[blind_index].config.object:get_UIE_by_ID('select_blind_button')
+	-- 	G.FUNCS.select_blind(button)
+	-- 	return
+	-- end
+
+	outcome = self:use__select_blind()
+	if outcome.state then return end
+
 	if not G.kb_selected_area then return end
 	if G.kb_selected_area.highlighted and #G.kb_selected_area.highlighted == 0 then
 		self:toggle_selected(0)
 		return
 	end
-	if G.STATE == G.STATES.SELECTING_HAND and G.hand and G.kb_selected_area == G.hand then
-		if self:can("play") then
-			G.FUNCS.play_cards_from_highlighted()
-			self:reset_vars()
-		end
-		return
-	end
-	if G.jokers and G.kb_selected_area == G.jokers then return end
-	if G.consumeables and G.kb_selected_area == G.consumeables then
-		if G.kb_selected_area.highlighted and
-			G.kb_selected_area.highlighted[1] and
-			G.kb_selected_area.highlighted[1]:can_use_consumeable()
-		then
-			G.FUNCS.use_card {
-				config = {ref_table = G.kb_selected_area.highlighted[1]}
-			}
-			self:reset_vars()
-			return
-		end
-	end
-	if G.STATE == G.STATES.SHOP and G.kb_selected_area == G.shop_jokers or G.kb_selected_area == G.shop_vouchers or G.kb_selected_area == G.shop_booster then
-		local card = G.kb_selected_area.highlighted and G.kb_selected_area.highlighted[1]
-		if not card then return end
+
+	-- if G.STATE == G.STATES.SELECTING_HAND and G.hand and G.kb_selected_area == G.hand then
+	-- 	if self:can("play") then
+	-- 		G.FUNCS.play_cards_from_highlighted()
+	-- 		self:reset_vars()
+	-- 	end
+	-- 	return
+	-- end
+
+	outcome = self:use__play_hand()
+	if outcome.state then return end
+
+	-- if G.jokers and G.kb_selected_area == G.jokers then return end
+	-- if G.consumeables and G.kb_selected_area == G.consumeables then
+	-- 	if G.kb_selected_area.highlighted and
+	-- 		G.kb_selected_area.highlighted[1] and
+	-- 		G.kb_selected_area.highlighted[1]:can_use_consumeable()
+	-- 	then
+	-- 		G.FUNCS.use_card {
+	-- 			config = {ref_table = G.kb_selected_area.highlighted[1]}
+	-- 		}
+	-- 		self:reset_vars()
+	-- 		return
+	-- 	end
+	-- end
+	-- if G.STATE == G.STATES.SHOP and G.kb_selected_area == G.shop_jokers or G.kb_selected_area == G.shop_vouchers or G.kb_selected_area == G.shop_booster then
+	-- 	local card = G.kb_selected_area.highlighted and G.kb_selected_area.highlighted[1]
+	-- 	if not card then return end
 		
-		local button = {config = {ref_table = card}}
+	-- 	local button = {config = {ref_table = card}}
 		
-		if card.area == G.shop_booster then
-			G.FUNCS.can_open(button)
-			if button.config.button then
-				G.FUNCS.use_card(button)
-				self:reset_vars()
-				return
-			end
-		end
+	-- 	if card.area == G.shop_booster then
+	-- 		G.FUNCS.can_open(button)
+	-- 		if button.config.button then
+	-- 			G.FUNCS.use_card(button)
+	-- 			self:reset_vars()
+	-- 			return
+	-- 		end
+	-- 	end
 		
-		if card.area == G.shop_vouchers then
-			G.FUNCS.can_redeem(button)
-			if button.config.button then
-				G.FUNCS.use_card(button)
-				self:reset_vars()
-				return
-			end
-		end
+	-- 	if card.area == G.shop_vouchers then
+	-- 		G.FUNCS.can_redeem(button)
+	-- 		if button.config.button then
+	-- 			G.FUNCS.use_card(button)
+	-- 			self:reset_vars()
+	-- 			return
+	-- 		end
+	-- 	end
 		
-		if card.area == G.shop_jokers then
-			G.FUNCS.can_buy(button)
-			if button.config.button then
-				G.FUNCS.buy_from_shop(button)
-				return
-			end
-		end
-	end
+	-- 	if card.area == G.shop_jokers then
+	-- 		G.FUNCS.can_buy(button)
+	-- 		if button.config.button then
+	-- 			G.FUNCS.buy_from_shop(button)
+	-- 			return
+	-- 		end
+	-- 	end
+	-- end
 	
-	if G.kb_selected_area == G.pack_cards then
-		local card = G.kb_selected_area.highlighted and G.kb_selected_area.highlighted[1]
-		if not card then return end
-		if card.ability.consumeable and not card:can_use_consumeable() then return end
+	-- if G.kb_selected_area == G.pack_cards then
+	-- 	local card = G.kb_selected_area.highlighted and G.kb_selected_area.highlighted[1]
+	-- 	if not card then return end
+	-- 	if card.ability.consumeable and not card:can_use_consumeable() then return end
 		
-		local button = {config = {ref_table = card}}
-		G.FUNCS.can_select_card(button)
-		if button.config.button then
-			G.FUNCS.use_card(button)
-			self:reset_vars()
-			return
-		end
-	end
+	-- 	local button = {config = {ref_table = card}}
+	-- 	G.FUNCS.can_select_card(button)
+	-- 	if button.config.button then
+	-- 		G.FUNCS.use_card(button)
+	-- 		self:reset_vars()
+	-- 		return
+	-- 	end
+	-- end
+	outcome = self:use__buy_or_use_or_redeem()
+	if outcome.state then return end
+
+	return
 end
 
 function AMA.Voxlatro:buy_and_use()

@@ -715,7 +715,7 @@ local keybinds = {
 	["Dec10"] = function()
 		AMA.Voxlatro:add_offset(-10) --
 	end,
-	["Discard"] = function() AMA.Voxlatro:discard() end,
+	["Discard"] = function() AMA.Voxlatro:context_discard_or_skip() end,
 	["Use"] = function() AMA.Voxlatro:context_use() end,
 	["BuyAndUse"] = function() AMA.Voxlatro:buy_and_use() end,
 	["SelectHand"] = function()

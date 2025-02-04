@@ -380,8 +380,13 @@ end
 -- backspace for next round -- done
 -- backspace to skip blind -- DONE OMFFGGGGG
 
-
-function AMA.Voxlatro:discard()
+--- Multifunction Contextual Action for the `Backspace` KeyBinding
+--- Potential Actions:
+---  - Exit out of a Booster Pack (`Skip` Button)
+---  - Skip the current blind (`Skip Blind` Button)
+---  - Exit Shop (`Next Round` Button)
+---  - Discard Highlighted Cards
+function AMA.Voxlatro:context_discard_or_skip()
 	if G.STATE == G.STATES.BLIND_SELECT then
 		-- Can't fake it fully, we need the tag
 		
@@ -436,6 +441,19 @@ end
 -- enter to select from pack
 -- enter to select blind -- done
 
+
+--- Multifunctional Context Use Function. Allows for the `Enter` Key to be used for multiple actions based on the current game state.
+--- Potential Actions:
+---  - Cash Out
+---  - Select Blind
+---  - Select the first card in the current card area
+---    - Only if an area is selected and no cards are highlighted
+---  - Play Highlighted Cards
+---  - Use a Highlighted Consumeable Card
+---  - Buy a Highlighted Card from the Shop
+---  - Open a Highlighted Booster from the Shop
+---  - Redeem a Highlighted Voucher from the Shop
+---  - Select/Use a Highlighted Card from the Pack
 function AMA.Voxlatro:context_use()
 	if G.STATE == G.STATES.ROUND_EVAL then
 		local fakebutton = {config = {}}

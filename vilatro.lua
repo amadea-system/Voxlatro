@@ -300,6 +300,45 @@ end
 
 -- ----- Talon RPC Command Handlers -----
 
+local function handle_newRunMenu(command)
+	-- TODO: Refactor to use `toggle_overlay_menu()` ?
+	 -- ids: `restart_button`, `from_game_over`, `main_menu_play`
+
+	if G.OVERLAY_MENU then
+		-- return {state=false, msg="Overlay Menu Not Open"}
+		-- AMA.talon_rpc:send_response(command.uuid, {warning = "Overlay Menu Open"})
+		G.FUNCS.exit_overlay_menu()
+		return {
+			type = "no-action",
+			reflection = {type = command.data.type, value = "New Run Menu Closed"}
+		}
+	end
+
+	if not G.SETTINGS.tutorial_complete then
+		-- I'm not sure if this will cause an issue but I'm just going to avoid this state in case.
+		AMA.talon_rpc:send_response(command.uuid, {warning = "Tutorial Not Complete. Aborting..."})
+		return
+	end
+
+	-- create appropriate config based on the current state.
+	local e = nil
+	if G.STAGE == G.STAGES.RUN then
+		e = {config = {id = 'restart_button'}}
+	elseif G.STAGE == G.STAGES.MAIN_MENU then
+		e = {config = {id = 'main_menu_play'}}
+	else
+		AMA.talon_rpc:send_response(command.uuid, {error = "Unexpected State! G.STAGE: " .. inspect(G.STAGE)})
+		return
+	end
+
+	G.FUNCS.setup_run(e)
+
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = "Restart Run Menu Opened"}
+	}
+end
+
 local function handle_selectCard(command)
 
 	local index = command.data.cardNumber or 1
@@ -646,6 +685,11 @@ local command_handlers = {
         data_keys = {},  -- No required keys
         overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
     },
+	toggleNewRunMenu = {
+		handler = handle_newRunMenu,
+		data_keys = {},  -- No required keys
+		overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+	},
 	toggleDeckView = {
 		handler = handle_toggleDeckView,
 		data_keys = {deckViewMode = true},

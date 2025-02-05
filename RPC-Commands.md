@@ -172,10 +172,27 @@ Note: I'm very much unhappy with the way this Command is structured. It will alm
 - Type: `moveCard`
 - Description: Moves a card in the active area to a new position.
 - Parameters:
+    - `cardNumber` (int): **Required** The number of the card to move. Card numbers are 1-indexed.
+    - `moveType` (string): **Required** The type of movement to perform. Possible values are "position", "vector", "moveToLimit", and, "swapWith".
     - `movement` (dict): **Required** Dictates how & where to move the card.
-        - `position` (int): **Optional** The 1-based index of the card to move the card to.
-        - `vector` (int): **Optional** The number of places to move the card. Positive numbers move the card to the right, negative numbers move the card to the left.
-        - `swapWith` (int): **Optional** The 1-based index of the card to swap the card with. Not Yet Implemented.
+        - `position` (int): **Required For `moveType: position`** The 1-based index of the card to move the card to.
+        - `vector` (int): **Required For `moveType: vector`** The number of places to move the card. Positive numbers move the card to the right, negative numbers move the card to the left.
+        - `swapWith` (int): **Required For `moveType: swapWith`** The 1-based index of the card to swap the card with. Not Yet Implemented.
+        - `direction` (int): **Required For `moveType: moveToLimit`** The direction to move the card. Positive numbers move the card to the right, negative numbers move the card to the left.
+
+### `generalAction`
+
+- Type: `generalAction`
+- Description: Performs a general action in the active area. This is a catch-all command for simple actions that don't fit into other categories.
+- Parameters:
+    - `action` (string): **Required** The action to perform. See below for a list of available actions.
+
+#### Available Actions For `generalAction`
+
+- `cashOut`: Triggers the same action as the `Cash Out` GUI Button. Only works when in the proper state.
+- `playHand`: Plays the selected cards. (Aka Triggers the same action as the `Play Hand` GUI Button.) Only works when in the proper state.
+- `selectBlind`: Selects the next blind. (Triggers the same action as the `Select Blind` GUI Button). Only works when in the proper state.
+- `buyOrRedeemOrUse`: Contextual action that will either use, buy, open, select, or redeem, selected card/pack. Only works when in the proper state.
 
 ### `invertCardSelection`
 

@@ -628,7 +628,7 @@ local command_handlers = {
     },
     moveCard = {
         handler = handle_moveCard,
-        data_keys = {cardNumber = true, movement = true},
+        data_keys = {cardNumber = true, movement = true, moveType = true},
         overlay_menu = RequiredOverlayMenuState.FORBID
     },
 	generalAction = {

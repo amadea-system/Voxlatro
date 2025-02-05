@@ -397,35 +397,48 @@ local function handle_moveCard(command)
 	local movement = command.data.movement
 	local move_type = command.data.moveType
 
-	if not card_number or not movement then
-		AMA.talon_rpc:send_response(command.uuid, {error = "Missing Required Keys in Move Card Command"})
+	if not card_number or not movement or not move_type then
+		AMA.talon_rpc:send_response(command.uuid, {error = "Missing Required Keys in Move Card Command: " .. inspect(command.data)})
 		return
 	end
 
-	if not movement.position and not movement.vector and not movement.swapWith and movement.moveToLimit and not movement.direction then
-		AMA.talon_rpc:send_response(command.uuid, {error = "Missing Required Keys in Move Card Command: `movement` Dict "})
+	local required_movement_keys = {
+		vector = {"vector"},
+		position = {"position"},
+		swapWith = {"swapWith"},
+		moveToLimit = {"direction"}
+	}
+
+	if not utils.check_if_key_in_table(move_type, required_movement_keys) then
+		AMA.talon_rpc:send_response(command.uuid, {error = "Invalid Move Type: " .. move_type})
 		return
+	end
+	local required_move_type_keys = required_movement_keys[move_type]
+	for _, key in ipairs(required_move_type_keys) do
+		if not movement[key] then
+			AMA.talon_rpc:send_response(command.uuid, {error = "Missing Required Key in Move Card Command: " .. key})
+			return
+		end
 	end
 
 	local result = {state=false, msg="Invalid Movement Instructions"}
-	if movement.position then
+	if move_type == "position" then
 		-- Move the card to the specified position
 		result = AMA.Voxlatro:move_card_to_position(card_number, movement.position)
 		print("Moved Card #" .. card_number .. " to Position #" .. movement.position)
-	elseif movement.moveToLimit and movement.direction ~= nil then
+	elseif move_type == "moveToLimit" then
 		result = AMA.Voxlatro:move_card_to_limit(card_number, movement.direction)
 		print("Moved Card #" .. card_number .. " to Limit " .. movement.direction)
 
-	elseif movement.vector then
+	elseif move_type == "vector" then
 		-- Move the card a relative amount of places left or right
 		result = AMA.Voxlatro:move_card_relative(card_number, movement.vector)
 		print("Moved Card #" .. card_number .. " " .. movement.vector .. " places")
-	elseif movement.swapWith then
+	elseif move_type == "swapWith" then
 		-- Swap the card with another card
 		-- result = AMA.Voxlatro:swap_cards(card_number, movement.swapWith)
 		result = {state=false, msg="Not Implemented"}
 		print("Swapped Card #" .. card_number .. " with Card #" .. movement.swapWith)
-
 	end
 
 	if not result.state then

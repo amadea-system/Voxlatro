@@ -217,7 +217,11 @@ end
 ---  - `state`: boolean If the function was successful or not.
 ---  - `msg`: string message explaining the result of the function.
 function AMA.Voxlatro:move_card_to_position(card_number, position)
-	
+
+	if card_number == nil or position == nil then
+		return {state=false, msg="Must Provide cardNumber and position"}
+	end
+
 	local number_of_cards = self:get_size()
 
 	if number_of_cards == 0 then

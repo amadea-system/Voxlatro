@@ -685,10 +685,10 @@ local command_handlers = {
         data_keys = {},  -- No required keys
         overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
     },
-	toggleNewRunMenu = {
+	openNewRunMenu = {
 		handler = handle_newRunMenu,
 		data_keys = {},  -- No required keys
-		overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
+		overlay_menu = RequiredOverlayMenuState.ALLOW  -- Closing runstat in some conditions can cause issues. Just have this RC allow for opening it, not closing it.
 	},
 	toggleDeckView = {
 		handler = handle_toggleDeckView,

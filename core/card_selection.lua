@@ -171,8 +171,10 @@ function AMA.Voxlatro:toggle_selected(index)
 	end
 	if not G[self.selected_id] then 
 		self:reset_vars()
-	return end
-	if not G.kb_selected_area.cards then return end
+		return 
+	end
+
+	if not G.kb_selected_area or not G.kb_selected_area.cards then return end
 	local total_index = G.kb_select_offset + index + 1
 	if 1 > total_index or total_index > #G.kb_selected_area.cards then return end
 	local card = G.kb_selected_area.cards[total_index]

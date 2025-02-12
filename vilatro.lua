@@ -49,7 +49,15 @@ if success and dpAPI.isVersionCompatible(1) then
 		runEvalCommand = nil
 	end
 else
-	print("DebugPlus API is not available")
+	runEvalCommand, err = SMODS.load_file("core/evalCodeBundled/eval_code_ndpb.lua")()
+	if err then
+		print("Error loading library `evalCodeBundled/eval_code_ndpb.lua`: " .. err)
+		runEvalCommand = nil
+	end
+end
+
+if not runEvalCommand then
+	print("Note! Arbitrary Lua code execution is disabled as the DebugPlus API is not available and/or the fallback `evalCodeBundled` library failed to load or is not available and/or `eval_code_ndpb.lua` / `eval_code.lua` failed to load.")
 end
 
 local _, err = SMODS.load_file("core/card_selection.lua")()

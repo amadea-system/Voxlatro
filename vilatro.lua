@@ -627,6 +627,7 @@ local function handle_evalLua(command)
 
 	local lua_code = command.data.luaCode
 	if not lua_code then
+		-- We should never get here, as the RPC Command Handler should have already checked for this. But just in case...
 		print("WARNING! Missing `luaCode` in RPC Command!")
 		return
 	end

@@ -943,12 +943,24 @@ local function run_talon_RPC_command()
 	end
 
 	-- Call the handler function for the command
-	-- TODO: Be able to handle more than just payload. Handle any Warnings/Errors as well.
-	local payload = handler_entry.handler(command)
-	if not payload then
-		payload = {type = "no-action", reflection = {type = command.data.type, value = "Default Canned Response"}}
+	local result = handler_entry.handler(command)
+	if not result then
+		-- If the handler function returns nil, it has already sent a response.
+		return
 	end
-	AMA.talon_rpc:send_response(command.uuid, {payload = payload})
+
+	-- if the results are an empty table, construct a default response
+	if next(result) == nil then
+		result = {type = "no-action", reflection = {type = command.data.type, value=command.data}, result="Default Canned Response"}
+	end
+
+	-- If the results are just raw payload, wrap them in the appropriate response format
+	if result.payload == nil and result.error == nil and result.warning == nil then
+		result = {payload = result}
+	end
+
+	-- Send the response to Talon
+	AMA.talon_rpc:send_response(command.uuid, result)
 
 end
 

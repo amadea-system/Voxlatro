@@ -408,6 +408,8 @@ local function handle_invertCardSelection(command)
 	-- exceptCards: list of 1-based indices of cards to avoid inverting. Optional
 
 	local except_cards = command.data.exceptCards or {}
+
+	AMA.Voxlatro:try_select_default_cardarea()  -- If no cardArea is selected, select the default one.
 	local number_of_cards = AMA.Voxlatro:get_size()
 	if number_of_cards == 0 then
 		AMA.talon_rpc:send_response(command.uuid, {error = "No Cards In Selected Area or No Area Selected (e1)"})

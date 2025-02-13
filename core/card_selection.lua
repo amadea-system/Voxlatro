@@ -151,28 +151,9 @@ function AMA.Voxlatro:toggle_selected(index)
 	if G.kb_selected_area and G.kb_selected_area.cards and #G.kb_selected_area.cards == 0 then
 		self:reset_vars()
 	end
-	if not G.kb_selected_area then 
-		-- Some sensible defaults
-		if G.STATE == G.STATES.SELECTING_HAND then
-			self:set_selected('hand')
-		elseif G.STATE == G.STATES.BLIND_SELECT
-			or G.STATE == G.STATES.HAND_PLAYED
-			or G.STATE == G.STATES.ROUND_EVAL
-			then self:set_selected('jokers')
-		elseif G.STATE == G.STATES.TAROT_PACK
-			or G.STATE == G.STATES.PLANET_PACK
-			or G.STATE == G.STATES.SPECTRAL_PACK
-			or G.STATE == G.STATES.BUFFOON_PACK
-			or G.STATE == G.STATES.STANDARD_PACK
-		then self:set_selected("pack_cards")
-		elseif G.STATE == G.STATES.SHOP then
-			self:set_selected("shop_jokers")
-		else return end
-	end
-	if not G[self.selected_id] then 
-		self:reset_vars()
-		return 
-	end
+	self:try_select_default_cardarea()
+
+	if not G.kb_selected_area then return end
 
 	if not G.kb_selected_area or not G.kb_selected_area.cards then return end
 	local total_index = G.kb_select_offset + index + 1
@@ -192,6 +173,43 @@ function AMA.Voxlatro:toggle_selected(index)
 		G.kb_selected_area:add_to_highlighted(card)
 		self.last_highlighted = card
 		self.last_highlighted:hover()
+	end
+end
+
+--- Attempts to select the default card area based on the current game state if no area is currently selected
+function AMA.Voxlatro:try_select_default_cardarea()
+
+	if G.kb_selected_area then
+		-- An area is already selected, There's nothing to do.
+		return
+	end
+
+	-- Some sensible defaults
+	if G.STATE == G.STATES.SELECTING_HAND then
+		self:set_selected('hand')
+		
+	elseif G.STATE == G.STATES.BLIND_SELECT
+		or G.STATE == G.STATES.HAND_PLAYED
+		or G.STATE == G.STATES.ROUND_EVAL
+	then 
+		self:set_selected('jokers')
+	elseif G.STATE == G.STATES.TAROT_PACK
+		or G.STATE == G.STATES.PLANET_PACK
+		or G.STATE == G.STATES.SPECTRAL_PACK
+		or G.STATE == G.STATES.BUFFOON_PACK
+		or G.STATE == G.STATES.STANDARD_PACK
+	then 
+		self:set_selected("pack_cards")
+	elseif G.STATE == G.STATES.SHOP then
+		self:set_selected("shop_jokers")
+	else 
+		return
+	end
+	if not G[self.selected_id] then
+		-- error("Selected Area Does Not Exist")
+		print("[Voxlatro:try_select_default_cardarea()] Selected Area Does Not Exist!?")
+		self:reset_vars()
+		return
 	end
 end
 

@@ -929,17 +929,6 @@ if DEBUG_MODE then
 		end
 	}
 
-	-- ----- Talon Keybinds -----
-
-	-- Run Talon Command via File RPC (Even when `G.OVERLAY_MENU`)
-	-- SMODS.Keybind {
-	-- 	-- key = "vilatro_talon_print_clipboard",
-	-- 	key_pressed = "f8",
-	-- 	action = function()
-	-- 		run_talon_RPC_command()
-	-- 	end
-	-- }
-	
 end
 
 

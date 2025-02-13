@@ -2,9 +2,26 @@
 -- Primary Global Namespace
 if not AMA then AMA = {} end
 
+-- ---------- Configs ----------
+
+--- Enables Debug Mode.
+--- This will enable several hardcoded debugging keybinds as well a few other things.
+--- @type boolean
+local DEBUG_MODE = true
+
+--- Controls whether or not to enable the `evalLua` RPC Command.
+--- This is a security risk and should only be enabled if you know what you are doing.
+--- @type boolean
+local ENABLE_ARBITRARY_EVAL = true
+
+--- When false, the only keybind the TalonRPC Keybind & DEBUG_MODE Keybinds (if DEBUG_MODE is enabled) will be available.
+--- This as useful for when using DebugPlus to prevent conflicts.
+--- Regardless of this setting, actions tied to key presses can still be triggered via the `pressKey` RPC Command.
+--- @type boolean
+local ENABLE_NON_RPC_KEYBINDS = true
+
+
 -- ---------- Core Imports ----------
-
-
 
 --- @module 'inspect'
 local inspect, err = SMODS.load_file("lib/inspect.lua")()
@@ -65,10 +82,6 @@ if err then
 	print("Error loading library `card_selection`: " .. err)
 	error(err)
 end
-
--- ---------- Constants ----------
-local DEBUG_MODE = true
-local ENABLE_ARBITRARY_EVAL = true  -- Only enable this if you know what you are doing. It is a security risk.
 
 -- ---------- Local Variables ----------
 

@@ -87,6 +87,19 @@ end
 
 local mod = SMODS.current_mod
 
+-- ---- Keybinding Tables ----
+-- The following tables are used to store the keybinding_name: function pairs.
+
+--- Keybinds that are only available when the overlay menu is closed.
+--- In general, these are all/most of the keybinds that do not trigger an RPC Command.
+--- @type table<string, function>
+local keybinds = {}
+
+--- Keybinds that are always available, regardless of the state of the overlay menu.
+--- For now, this is just the TalonRPC keybind. I don't think there will be anymore added in the future however, as we are focusing primarily on RPC command Actions.
+--- @type table<string, function>
+local always_available_keybinds = {}
+
 -- ---------- Local Functions ----------
 
 local function sort_suit()
@@ -628,7 +641,112 @@ local function handle_evalLua(command)
 	}
 end
 
---- Generic Simple Action Handler
+-- --- Keypress Action Handler ---
+
+--- Helper function to handle simple actions that just trigger a keybind action
+--- @param kb_action string The keybind action to trigger. This should be the name of the item in the `keybinds` table (optionally prefixed with "kb__")
+--- @param key_name string? The name of the key to trigger the action for. Only used for logging & response purposes.
+--- @return {state: boolean, msg: string} The result of the action. `state` is true if the key action was triggered. `msg` is a string message describing the result.
+local function keyPressRPCCommand_triggerByKeyActionName(kb_action, key_name)
+
+	--[[
+	-- kb_action is a string that should be kb__{name_of_item_in_keybinds_table}
+	-- First, validate that the string starts with "kb__"
+	if not string.match(kb_action, "^kb__") then
+		return nil
+	end
+	
+	-- Next, remove the "kb__" prefix
+	local keybind_name = string.sub(kb_action, 5)
+
+	-- Next, check if the keybind exists
+	if not keybinds[keybind_name] then
+		return {activated=false, state=false, msg="Keybind Name Not Found: " .. keybind_name}
+	end
+
+	-- Finally, trigger the keybind
+	print("Triggering Keybind: " .. keybind_name)
+	keybinds[keybind_name]()
+	-]]
+
+	local key_name_msg = ""
+	if key_name then
+		key_name_msg = " (Key: `" .. key_name .. "`)"
+	end
+
+	-- Check if the key action name starts with "kb__", if it does, remove it
+	local keybind_name = kb_action
+	if string.match(keybind_name, "^kb__") then
+		keybind_name = string.sub(keybind_name, 5)
+	end
+
+	-- if not keybinds[keybind_name] and not always_available_keybinds[keybind_name] then return {...} end
+
+	-- Get the keybind function from the appropriate table
+	local kb_action_func = keybinds[keybind_name] or always_available_keybinds[keybind_name]
+
+	-- If the keybind function is not found, return an error
+	if not kb_action_func then
+		-- return {activated=false, state=false, msg="Key Action Name Not Found: " .. keybind_name}
+		return {state=false, msg="Key Action Name Not Found: " .. keybind_name .. key_name_msg}
+	end
+
+	-- Finally, trigger the keybind
+	print("Triggering Keybind: " .. keybind_name .. key_name_msg)
+	kb_action_func()
+
+	-- return {activated=true, state=true, msg=kb_action .. " Triggered"}
+	return {state=true, msg=kb_action .. " Triggered" .. key_name_msg}
+end
+
+
+--- Helper function to trigger a keybind action by the bound key name
+--- @param key_name string The name of the key to trigger the action for
+--- @return {state: boolean, msg: string} The result of the action. `state` is true if the key action was triggered. `msg` is a string message describing the result.
+local function keyPressRPCCommand_triggerByKeyName(key_name)
+	key_name = string.lower(key_name)
+	for action, key in pairs(mod.config) do
+		if string.lower(key) == key_name and type(action) == "string" then
+			-- return keyPressRPCCommand_triggerByKeyActionName("kb__" .. action)
+			return keyPressRPCCommand_triggerByKeyActionName(action, key_name)
+		end
+	end
+	-- return {activated=false, state=false, msg="Key Not Found: " .. key_name}
+	return {state=false, msg="Key Not Found: " .. key_name}
+end
+
+local function handle_keyPress(command)
+
+	-- the RPC Command Handler should have already ensured that either keyName or keyAction are present
+	-- local key_name = command.data.keyName
+	-- local key_action = command.data.keyAction
+
+	local outcome = nil
+	if command.data.keyName then
+		outcome = keyPressRPCCommand_triggerByKeyName(command.data.keyName)
+	elseif command.data.keyAction then
+		outcome = keyPressRPCCommand_triggerByKeyActionName(command.data.keyAction)
+	end
+
+	if not outcome.state then
+		AMA.talon_rpc:send_response(command.uuid, {warning = "Keypress Action Failed: " .. "\nReceived Data: " .. inspect(command.data)})
+		return
+	end
+
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = command.data},
+		result = outcome
+	}
+end
+
+
+-- --- Generic Simple Action Handler ---
+
+--- RPC Command Handler for simple actions
+--- @param command TalonRPCCommand The command to handle
+--- @return {type: string, reflection: {type: string, value: any}}? The result of the action. `type` is always "no-action". `reflection` contains the `type` of the command and the `value` of the action.
+---         If a response was sent by this function, nil will be returned.
 local function handle_voxlatroAction(command)
 	local action = command.data.action
 	local outcome = nil
@@ -696,6 +814,16 @@ local command_handlers = {
 		data_keys = {action = true},
 		overlay_menu = RequiredOverlayMenuState.FORBID
 	},
+	keyPress = {
+		handler = handle_keyPress,
+		data_keys = {keyName = false, keyAction = false},
+		overlay_menu = RequiredOverlayMenuState.FORBID,	-- As all the keypress actions currently can only run with the overlay menu closed, we will set this to FORBID.
+														-- Be sure to update this if we add keypress actions that can run with the overlay menu open.
+		conditions = function(command)
+			-- Ensure at least one of `keyName` or `keyAction` is provided
+			return command.data.keyName or command.data.keyAction
+		end
+	},
     toggleRunInfo = {
         handler = handle_toggleRunInfo,
         data_keys = {},  -- No required keys
@@ -736,7 +864,6 @@ local command_handlers = {
 		-- TODO: This should only run if the overlay menu is open
 		overlay_menu = RequiredOverlayMenuState.ALLOW  -- Can run regardless of overlay menu state
 	},
-	
     debugCounter = {
         handler = handle_debugCounter,
         data_keys = {},  -- No required keys
@@ -818,7 +945,7 @@ end
 
 
 --- Table defining the default keybinds for the mod that are only available when no Overlay Menu is open
-local keybinds = {
+keybinds = {
 	["Inc10"] = function()
 		AMA.Voxlatro:add_offset(10) -- 
 	end,
@@ -872,7 +999,7 @@ for i = 1, 10 do
 end
 
 --- Table defining the default keybinds for the mod that are always available regardless of the state of `G.OVERLAY_MENU`
-local always_available_keybinds = {
+always_available_keybinds = {
 	["TalonRPC"] = run_talon_RPC_command
 }
 
@@ -891,7 +1018,9 @@ local function register_keybinds(keybinding_table, block_by_overlay_menu)
 	end
 end
 
-register_keybinds(keybinds, true)
+if ENABLE_NON_RPC_KEYBINDS then
+	register_keybinds(keybinds, true)
+end
 register_keybinds(always_available_keybinds, false)
 
 

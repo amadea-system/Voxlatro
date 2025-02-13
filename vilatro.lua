@@ -944,6 +944,9 @@ local function run_talon_RPC_command()
 
 	-- Call the handler function for the command
 	local result = handler_entry.handler(command)
+	-- TODO: I'm not sure that I love having the sentinal value of nil to indicate that the handler function has already sent a response.
+	--       If we forget to return the result & don't send a responese in the handler function, it will just silently fail.
+	--       We should probably refactor this to be more explicit. Maybe return an empty table to indicate that the handler function has already sent a response?
 	if not result then
 		-- If the handler function returns nil, it has already sent a response.
 		return

@@ -751,6 +751,12 @@ end
 local function handle_voxlatroAction(command)
 	local action = command.data.action
 	local outcome = nil
+	if type(action) ~= "string" then
+		print("Error! Command: " .. inspect(command))
+		AMA.talon_rpc:send_response(command.uuid, {error = "Key `action` Must Be a String"})
+		return
+	end
+
 	if action == "cashOut" then
 		outcome = AMA.Voxlatro:use__cash_out()
 	elseif action == "playHand" then

@@ -775,6 +775,11 @@ local function handle_voxlatroAction(command)
 		return
 	end
 
+	if not outcome.state or not outcome.activated then
+		AMA.talon_rpc:send_response(command.uuid, {warning = "Action Failed: " .. action})
+		return
+	end
+
 	return {
 		type = "no-action",
 		reflection = {type = command.data.type, value = outcome}

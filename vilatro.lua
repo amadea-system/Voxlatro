@@ -104,12 +104,12 @@ local always_available_keybinds = {}
 
 local function sort_suit()
 	if not G.hand then return end
-	G.FUNCS.sort_hand_suit()
+	G.FUNCS.sort_hand_suit()  -- 'suit desc'
 end
 
 local function sort_rank()
 	if not G.hand then return end
-	G.FUNCS.sort_hand_value()
+	G.FUNCS.sort_hand_value()  -- 'desc'
 end
 
 --- This triggers the deck preview UIBox. This is the UI Element that shows when you move the cursor over the deck.

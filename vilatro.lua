@@ -102,14 +102,63 @@ local always_available_keybinds = {}
 
 -- ---------- Local Functions ----------
 
+--- Sort the hand by suit (descending)
+--- @return nil
 local function sort_suit()
 	if not G.hand then return end
 	G.FUNCS.sort_hand_suit()  -- 'suit desc'
 end
 
+--- Sort the hand by rank (descending)
+--- @return nil
 local function sort_rank()
 	if not G.hand then return end
 	G.FUNCS.sort_hand_value()  -- 'desc'
+end
+
+--- This function is used to sort the hand in different ways.
+--- The sort type is passed in as a string.
+--- Valid values are: 'desc', 'asc', 'suit desc', 'suit asc'
+--- @param sort_type string The type of sort to perform. Valid values are: 'desc', 'asc', 'suit desc', 'suit asc'
+--- @return boolean Whether the sort_type was valid.
+local function sort_custom(sort_type)
+	
+	-- Validate sort_type. Valid values are: desc', 'asc', 'suit desc', 'suit asc'
+	sort_type = string.lower(sort_type)
+	if sort_type ~= 'desc' and 
+		sort_type ~= 'asc' and 
+		sort_type ~= 'suit desc' and
+		sort_type ~= 'suit asc'
+	then
+		print("Invalid Sort Type: " .. sort_type)
+		return false
+	end
+
+	if not G.hand then return true end
+
+	-- Do the sort
+	G.hand:sort(sort_type)
+	play_sound('paper1')
+	return true
+end
+
+--- Toggles the current sorting method for your hand between `Rank` & `Suit`.
+--- Maintains the sorting order (ascending or descending) when switching between `Rank` & `Suit`.
+--- @return nil
+local function sort_toggle()
+	if not G.hand then return end
+	local current_sort_type = G.hand.config.sort
+	if current_sort_type == 'suit desc' then
+		sort_custom('desc')
+	elseif current_sort_type == 'desc' then
+		sort_custom('suit desc')
+	elseif current_sort_type == 'suit asc' then
+		sort_custom('asc')
+	elseif current_sort_type == 'asc' then
+		sort_custom('suit asc')
+	else
+		sort_custom('desc')
+	end
 end
 
 --- This triggers the deck preview UIBox. This is the UI Element that shows when you move the cursor over the deck.
@@ -744,6 +793,34 @@ local function handle_keyPress(command)
 end
 
 
+-- --- Card Sorting Action Handler ---
+
+local function handle_sortCards(command)
+	local sort_type = command.data.sortType
+	if not sort_type then
+		AMA.talon_rpc:send_response(command.uuid, {error = "Missing Required Key: `sortType`"})
+		return
+	end
+	
+	if sort_type == "suit" then
+		sort_suit()
+	elseif sort_type == "rank" then
+		sort_rank()
+	elseif sort_type == "toggle" then
+		sort_toggle()
+	else
+		local valid = sort_custom(sort_type)
+		if not valid then
+			return {error = "Invalid Sort Type: " .. sort_type}
+		end
+	end
+
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = sort_type}
+	}
+end
+
 -- --- Generic Simple Action Handler ---
 
 --- RPC Command Handler for simple actions
@@ -837,6 +914,11 @@ local command_handlers = {
 			-- Ensure at least one of `keyName` or `keyAction` is provided
 			return command.data.keyName or command.data.keyAction
 		end
+	},
+	sortCards = {
+		handler = handle_sortCards,
+		data_keys = {sortType = true},
+		overlay_menu = RequiredOverlayMenuState.FORBID
 	},
     toggleRunInfo = {
         handler = handle_toggleRunInfo,

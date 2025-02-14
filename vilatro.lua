@@ -757,7 +757,7 @@ end
 --- @return {state: boolean, msg: string} The result of the action. `state` is true if the key action was triggered. `msg` is a string message describing the result.
 local function keyPressRPCCommand_triggerByKeyName(key_name)
 	key_name = string.lower(key_name)
-	for action, key in pairs(mod.config) do
+	for action, key in pairs(mod.config.KeyBinds) do
 		if string.lower(key) == key_name and type(action) == "string" then
 			-- return keyPressRPCCommand_triggerByKeyActionName("kb__" .. action)
 			return keyPressRPCCommand_triggerByKeyActionName(action, key_name)
@@ -1117,10 +1117,10 @@ always_available_keybinds = {
 
 local function register_keybinds(keybinding_table, block_by_overlay_menu)
 	for key, action in pairs(keybinding_table) do
-		if mod.config[key] ~= false then
+		if mod.config.KeyBinds ~= nil and mod.config.KeyBinds[key] ~= false then
 			SMODS.Keybind {
 				key = "vilatro_binding_" .. key,
-				key_pressed = mod.config[key],
+				key_pressed = mod.config.KeyBinds[key],
 				action = function()
 					if not G.OVERLAY_MENU or not block_by_overlay_menu then action() end
 				end
@@ -1321,72 +1321,72 @@ mod.config_tab = function()
 			},
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select1",
 					label = "vi_keybind_sel",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select2",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select3",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select4",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select5",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select6",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select7",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select8",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select9",
 					info = "vi_keybind_sel_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Select0",
 					info = "vi_keybind_sel_desc"
 				},
 			}},
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Dec10",
 					label = "vi_keybind_dec10",
 					info = "vi_keybind_dec10_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Inc10",
 					label = "vi_keybind_inc10",
 					info = "vi_keybind_inc10_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "DeselectAll",
 					label = "vi_keybind_desel",
 					info = "vi_keybind_desel_desc"
@@ -1394,25 +1394,25 @@ mod.config_tab = function()
 			}},
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectHand",
 					label = "vi_keybind_sel_hand",
 					info = "vi_keybind_sel_hand_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectJokers",
 					label = "vi_keybind_sel_jokers",
 					info = "vi_keybind_sel_jokers_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectConsumeables",
 					label = "vi_keybind_sel_consumables",
 					info = "vi_keybind_sel_consumables_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectPackCards",
 					label = "vi_keybind_sel_pack_cards",
 					info = "vi_keybind_sel_pack_cards_desc"
@@ -1420,31 +1420,31 @@ mod.config_tab = function()
 			}},
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectShopJokers",
 					label = "vi_keybind_sel_shop",
 					info = "vi_keybind_sel_shop_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectShopVouchers",
 					info = "vi_keybind_sel_shop_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectShopBooster",
 					info = "vi_keybind_sel_shop_desc"
 				},
 			}},
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectCycleLeft",
 					label = "vi_keybind_sel_left",
 					info = "vi_keybind_sel_left_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SelectCycleRight",
 					label = "vi_keybind_sel_right",
 					info = "vi_keybind_sel_right_desc"
@@ -1452,25 +1452,25 @@ mod.config_tab = function()
 			}},
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Discard",
 					label = "vi_keybind_discard",
 					info = "vi_keybind_discard_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Use",
 					label = "vi_keybind_use",
 					info = "vi_keybind_use_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "BuyAndUse",
 					label = "vi_keybind_buy_and_use",
 					info = "vi_keybind_buy_and_use_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "PeekDeck",
 					label = "vi_keybind_peek_deck",
 					info = "vi_keybind_peek_deck_desc"
@@ -1478,25 +1478,25 @@ mod.config_tab = function()
 			}},
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Reroll",
 					label = "vi_keybind_reroll",
 					info = "vi_keybind_reroll_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "Sell",
 					label = "vi_keybind_sell",
 					info = "vi_keybind_sell_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SortSuit",
 					label = "vi_keybind_sort_suit",
 					info = "vi_keybind_sort_suit_desc"
 				},
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "SortRank",
 					label = "vi_keybind_sort_rank",
 					info = "vi_keybind_sort_rank_desc"
@@ -1504,7 +1504,7 @@ mod.config_tab = function()
 			}},
 			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
 				create_keybind_button {
-					ref_table = mod.config,
+					ref_table = mod.config.KeyBinds,
 					ref_value = "TalonRPC",
 					label = "vi_keybind_talon_rpc",
 					info = "vi_keybind_talon_rpc_desc"

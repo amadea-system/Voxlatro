@@ -86,6 +86,7 @@ end
 -- ---------- Local Variables ----------
 
 local mod = SMODS.current_mod
+AMA.current_mod = mod  -- This is for debugging mostly
 
 -- ---- Keybinding Tables ----
 -- The following tables are used to store the keybinding_name: function pairs.
@@ -844,6 +845,10 @@ local function handle_voxlatroAction(command)
 		outcome = AMA.Voxlatro:use__select_blind()
 	elseif action == "buyOrRedeemOrUse" then
 		outcome = AMA.Voxlatro:use__buy_or_use_or_redeem()
+	elseif action == "discard" then
+		outcome = AMA.Voxlatro:discard__discard_cards()
+	elseif action == "skip" then
+		outcome = AMA.Voxlatro:discard__skip_or_next()
 	else 
 		AMA.talon_rpc:send_response(command.uuid, {error = "Unknown Action: " .. action})
 		return

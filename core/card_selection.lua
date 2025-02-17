@@ -400,6 +400,69 @@ function AMA.Voxlatro:_move_card(card_number, direction, align_cards)
 	return {state=true, msg="Card Moved"}
 end
 
+--- Does one of the following actions based on the current game state:
+--- - Exit out of a Booster Pack (`Skip` Button)
+--- - Skip the current blind (`Skip Blind` Button)
+--- - Exit Shop (`Next Round` Button)
+function AMA.Voxlatro:discard__skip_or_next()
+	if G.STATE == G.STATES.BLIND_SELECT then
+		-- Can't fake it fully, we need the tag
+		
+		local current_blind = G.GAME.blind_on_deck or 'Small'
+		if current_blind == "Boss" then return end
+		
+		-- TODO: Make `_tag` local
+		local _tag = Tag(G.GAME.round_resets.blind_tags[current_blind], nil, current_blind)
+		
+		if not _tag then
+			error("tag is null for blind " .. current_blind)
+		end
+		
+		local fakebutton = {
+			UIBox = {
+				get_UIE_by_ID = function()
+					return {config = {ref_table = _tag}}
+				end
+			}
+		}
+		
+		G.FUNCS.skip_blind(fakebutton)
+		return {activated=true, state=true, msg="Skipped Blind"}
+	end
+	if G.STATE == G.STATES.TAROT_PACK
+		or G.STATE == G.STATES.PLANET_PACK
+		or G.STATE == G.STATES.SPECTRAL_PACK
+		or G.STATE == G.STATES.BUFFOON_PACK
+		or G.STATE == G.STATES.STANDARD_PACK
+	then
+		if self:can("skip_booster") then
+			G.FUNCS.skip_booster()
+			self:reset_vars()
+			return {activated=true, state=true, msg="Skipped Booster"}
+		end
+	end
+	if G.STATE == G.STATES.SHOP then
+		G.FUNCS.toggle_shop()
+		self:reset_vars()
+		return {activated=true, state=true, msg="Exited Shop"}
+	end
+	return {activated=false, state=false, msg="No Action Taken"}
+end
+
+--- Discards the highlighted cards in the current card area. 
+--- Only works when the game is in the correct state.
+function AMA.Voxlatro:discard__discard_cards()
+
+	if G.STATE ~= G.STATES.SELECTING_HAND then return {activated=false, state=false, msg="Not in Hand Selection State"} end
+	if not G.GAME.current_round then return {activated=false, state=false, msg="No Current Round"} end
+	if not G.kb_selected_area then return {activated=false, state=false, msg="No Selected Card Area"} end
+	if G.hand and G.kb_selected_area ~= G.hand then return {activated=false, state=false, msg="Selected Area is Not Hand"} end
+	if not self:can("discard") then return {activated=false, state=true, msg="Not Allowed to Discard Cards"} end
+	G.FUNCS.discard_cards_from_highlighted(nil, false) 
+	self:reset_vars()
+	return {activated=true, state=true, msg="Discarded Cards"}
+end
+
 -- backspace to skip pack -- done
 -- backspace for next round -- done
 -- backspace to skip blind -- DONE OMFFGGGGG
@@ -411,6 +474,7 @@ end
 ---  - Exit Shop (`Next Round` Button)
 ---  - Discard Highlighted Cards
 function AMA.Voxlatro:context_discard_or_skip()
+	-- TODO: Replace the below logic w/ the new `discard__skip_or_next` and `discard__discard_cards` functions 
 	if G.STATE == G.STATES.BLIND_SELECT then
 		-- Can't fake it fully, we need the tag
 		

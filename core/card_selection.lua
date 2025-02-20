@@ -747,7 +747,7 @@ function AMA.Voxlatro:context_use()
 
 	if not G.kb_selected_area then return end
 	if G.kb_selected_area.highlighted and #G.kb_selected_area.highlighted == 0 then
-		self:toggle_selected(0)
+		self:toggle_selected_1idx(1)
 		return
 	end
 
@@ -830,7 +830,7 @@ end
 function AMA.Voxlatro:buy_and_use()
 	if not G.kb_selected_area then return end
 	if G.kb_selected_area.highlighted and #G.kb_selected_area.highlighted == 0 then
-		self:toggle_selected(0)
+		self:toggle_selected_1idx(1)
 		return
 	end
 	if not (G.STATE == G.STATES.SHOP and G.kb_selected_area == G.shop_jokers) then return end

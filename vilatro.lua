@@ -426,8 +426,7 @@ end
 local function handle_selectCard(command)
 
 	local index = command.data.cardNumber or 1
-	-- TODO: Refactor `toggle_selected()` to use 1-based indexing
-	AMA.Voxlatro:toggle_selected(index - 1)
+	AMA.Voxlatro:toggle_selected_1idx(index)
 	print("Toggled Selected as Requested: " .. index)
 
 	return {
@@ -442,8 +441,7 @@ local function handle_selectMultipleCards(command)
 
 	local card_numbers = command.data.cardNumbers or {}
 	for i, card_number in ipairs(card_numbers) do
-		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
-		AMA.Voxlatro:toggle_selected(card_number - 1)
+		AMA.Voxlatro:toggle_selected_1idx(card_number)
 	end
 	print("Toggled Selected as Requested: " .. inspect(card_numbers))
 
@@ -487,13 +485,11 @@ local function handle_invertCardSelection(command)
 
 	for i, card_number in ipairs(cards_to_lower) do
 		-- print("[INVERTING] Lowering Card #" .. card_number)
-		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
-		AMA.Voxlatro:toggle_selected(card_number - 1)
+		AMA.Voxlatro:toggle_selected_1idx(card_number)
 	end
 	for i, card_number in ipairs(cards_to_raise) do
 		-- print("[INVERTING] Raising Card #" .. card_number)
-		-- TODO: Refactor `toggle_selected()` to use 1-based indexing
-		AMA.Voxlatro:toggle_selected(card_number - 1)
+		AMA.Voxlatro:toggle_selected_1idx(card_number)
 	end
 
 	return {
@@ -1109,7 +1105,7 @@ keybinds = {
 
 for i = 1, 10 do
 	keybinds["Select" .. tostring(i % 10)] = function()
-		AMA.Voxlatro:toggle_selected((i + 9) % 10)
+		AMA.Voxlatro:toggle_selected_0idx((i + 9) % 10)
 	end
 end
 

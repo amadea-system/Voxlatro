@@ -20,6 +20,9 @@ end
 -- ---------- Local Variables ----------
 
 G.kb_select_offset = 0
+-- ----- Selection Configuration -----
+
+local UNHIGHLIGHT_JOKER_AND_SHOP_CARDS_WHEN_SELECTING_ANOTHER_CARD = true
 
 -- ----- Voxlatro Class Object -----
 
@@ -124,6 +127,48 @@ function AMA.Voxlatro:add_offset(amount)
 	self:update_offset(G.kb_select_offset + amount)
 end
 
+--- Toggles the highlight state of the given card.
+--- Additionally, handles activating/deactivating hover state and tracking the last highlighted card.
+--- @param card Card The card to toggle the highlight state of
+--- @private
+function AMA.Voxlatro:toggle_card_highlight(card)
+	if not card then return false end
+
+	local card_name = card.__talon_id or card.__kb_index or "Unknown"
+
+	local function reset_last_highlighted()
+		if self.last_highlighted then
+			self.last_highlighted:stop_hover()
+		end
+
+		if UNHIGHLIGHT_JOKER_AND_SHOP_CARDS_WHEN_SELECTING_ANOTHER_CARD and self.last_highlighted and self.last_highlighted.area then
+			if self.last_highlighted.area == G.jokers or
+			   self.last_highlighted.area == G.shop_jokers or
+			   self.last_highlighted.area == G.shop_vouchers or
+			   self.last_highlighted.area == G.shop_booster
+			then
+				self.last_highlighted.area:remove_from_highlighted(self.last_highlighted)
+			end
+		end
+
+		self.last_highlighted = nil
+	end
+
+	if card.highlighted then
+		reset_last_highlighted()
+		G.kb_selected_area:remove_from_highlighted(card)
+	elseif G.kb_selected_area:can_highlight(card) then
+		reset_last_highlighted()  -- Original implementation did not set last_highlighted to nil here.
+		G.kb_selected_area:add_to_highlighted(card)
+		self.last_highlighted = card
+		self.last_highlighted:hover()
+	else
+		print("Card " .. card_name .. " can not be highlighted!")
+		card:juice_up(0.2, 0.2)
+	end
+
+end
+
 --- Sets the currently selected card area
 --- @param id string The ID of the card area to select (e.g. 'hand', 'jokers', etc.)
 function AMA.Voxlatro:set_selected(id)
@@ -204,20 +249,8 @@ function AMA.Voxlatro:toggle_selected_1idx(index, allow_negative)
 	print("Selecting Card #" .. total_index .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
 	print("card ~= nil" .. (card ~= nil and "true" or "false"))
 
-	if card.highlighted then
-		if self.last_highlighted then
-			self.last_highlighted:stop_hover()
-		end
-		self.last_highlighted = nil
-		G.kb_selected_area:remove_from_highlighted(card)
-	elseif G.kb_selected_area:can_highlight(card) then
-		if self.last_highlighted then
-			self.last_highlighted:stop_hover()
-		end
-		G.kb_selected_area:add_to_highlighted(card)
-		self.last_highlighted = card
-		self.last_highlighted:hover()
-	end
+	self:toggle_card_highlight(card)
+
 end
 
 --- Attempts to select the default card area based on the current game state if no area is currently selected

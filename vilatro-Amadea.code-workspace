@@ -36,7 +36,8 @@
 		"Lua.hint.paramName": "Literal",
 		"Lua.workspace.ignoreDir": [
 			".vscode",
-			"../../Mods/lovely/dump"
+			"../../Mods/lovely/dump",
+			"\\!Local-Notes/",
 		],
 		"Lua.diagnostics.disable": ["trailing-space"]
 	}

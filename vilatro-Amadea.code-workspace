@@ -10,6 +10,9 @@
 			"path": "../../debug_logs"
 		},
 		{
+			"path": "../../debug_logs_old"
+		},
+		{
 			"path": "../../Mods/lovely/dump"
 		}
 	],

@@ -781,9 +781,8 @@ local function handle_keyPress(command)
 		outcome = keyPressRPCCommand_triggerByKeyActionName(command.data.keyAction)
 	end
 
-	if not outcome.state then
-		AMA.talon_rpc:send_response(command.uuid, {warning = "Keypress Action Failed: " .. "\nReceived Data: " .. inspect(command.data)})
-		return
+	if not outcome or not outcome.state then
+		return {warning = "`keyPress` Action Failed: " .. "\nCommand Data: " .. inspect(command.data)}
 	end
 
 	return {

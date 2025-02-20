@@ -9,6 +9,14 @@ if err then
 	error(err)
 end
 
+--- @module 'utils'
+local utils = {}
+utils, err = SMODS.load_file("core/utils.lua")()
+if err then
+	print("Error loading library `utils`: " .. err)
+	error(err)
+end
+
 -- ---------- Local Variables ----------
 
 G.kb_select_offset = 0
@@ -45,6 +53,7 @@ local dprint = AMA.dprint
 ---@type Voxlatro
 local amy = AMA.Voxlatro()
 amy:init()
+AMA.vox = amy
 
 
 -- ---------- Validation ----------
@@ -139,12 +148,27 @@ end
 
 --- Handles toggling card selection at a given offset index. This is the function called by the `0` - `9` KeyBindings
 --- @param index number The 0-based index from the current scroll offset to select/deselect
+--- @deprecated
 function AMA.Voxlatro:toggle_selected(index)
+	return self:toggle_selected_1idx(index+1, false)
+end
+
+--- Handles toggling card selection at a given offset index. This is the function called by the `0` - `9` KeyBindings
+--- @param index number The 0-based index from the current scroll offset to select/deselect
+function AMA.Voxlatro:toggle_selected_0idx(index)
+	return self:toggle_selected_1idx(index+1, false)
+end
+
+--- Handles toggling card selection at a given offset index.
+--- Negative indexes will not be effected by the kb_select_offset
+--- @param index number The 1-based index from the current scroll offset to select/deselect. If negative, selects from the end of the cards.
+--- @param allow_negative boolean? If false, disallows negative indexes. Default: true
+function AMA.Voxlatro:toggle_selected_1idx(index, allow_negative)
 	--- If no area is currently selected:
 	---   - Sets appropriate default area based on game state
 	---   - Returns without selecting if no valid area available
 	--- If the target card exists and is selectable:
-	---   - Toggles highlight state of card at offset + index + 1 
+	---   - Toggles highlight state of card at offset + index 
 	---   - Updates hover state and last highlighted card tracking
 	---   - Unhighlights previous card if one exists
     -- print("Toggling Selection with Index " .. index .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
@@ -153,13 +177,33 @@ function AMA.Voxlatro:toggle_selected(index)
 	end
 	self:try_select_default_cardarea()
 
+	-- We don't need this check here as we're doing it again on the next line below
 	if not G.kb_selected_area then return end
 
-	if not G.kb_selected_area or not G.kb_selected_area.cards then return end
-	local total_index = G.kb_select_offset + index + 1
-	if 1 > total_index or total_index > #G.kb_selected_area.cards then return end
-	local card = G.kb_selected_area.cards[total_index]
-	-- print("Selecting Card #" .. total_index .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
+	if not G.kb_selected_area or not G.kb_selected_area.cards then 
+		return 
+	end
+
+	if allow_negative == nil then allow_negative = true end
+
+	local total_index = index
+	if total_index > 0 then
+		-- TODO: Should we allow negative indexes to interact with the kb offset?
+		total_index = total_index + G.kb_select_offset
+	elseif not allow_negative then
+		print("Negative Indexing Not Allowed! Index: " .. tostring(index))
+		return
+	end
+
+	if not utils.is_table_idx_valid(G.kb_selected_area.cards, total_index) then
+		print("Invalid Index: " .. total_index)
+		return
+	end
+
+	local card = utils.get_at(G.kb_selected_area.cards, total_index)  -- use get_at to allow negative indexing.
+	print("Selecting Card #" .. total_index .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
+	print("card ~= nil" .. (card ~= nil and "true" or "false"))
+
 	if card.highlighted then
 		if self.last_highlighted then
 			self.last_highlighted:stop_hover()

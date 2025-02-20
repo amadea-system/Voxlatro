@@ -24,4 +24,29 @@ function utils.check_if_key_in_table(key, a_table)
     return false
 end
 
+--- Negatively OR positively index a table. (Table must start at 1)
+--- @param a_table table The table to index
+--- @param index number The index to index
+--- @return any The value at the indexed position
+function utils.get_at(a_table, index)
+    if index < 1 then
+        return a_table[#a_table + 1 + index]
+    else
+        return a_table[index]
+    end
+end
+
+--- Checks if a table index is valid. Allows for negative indexing. (Table must start at 1)
+function utils.is_table_idx_valid(a_table, index)
+    if index == 0 then
+        return false
+    end
+
+    if index < 0 then
+        return #a_table + 1 + index >= 1
+    else
+        return index <= #a_table
+    end
+end
+
 return utils

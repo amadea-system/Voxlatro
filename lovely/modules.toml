@@ -1,0 +1,11 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+# Modules
+[[patches]]
+[patches.module]
+source = "lib/inspect.lua"
+before = "main.lua"
+name = "voxlatro.inspect"

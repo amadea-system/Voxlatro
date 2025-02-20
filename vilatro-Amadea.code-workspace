@@ -39,6 +39,18 @@
 			"../../Mods/lovely/dump",
 			"\\!Local-Notes/",
 		],
-		"Lua.diagnostics.disable": ["trailing-space"]
+		"Lua.diagnostics.disable": ["trailing-space"],
+
+		// -- The settings below are an attempt to try to fix the jump around issue --
+
+		// GitLes CodeLens + Lua-Language-Server Seems to cause an issue that causes the editor location to jump around after
+		//   the Language Server is done analyzing. Turning off CodeLens on GitLens seems to fix the issue.
+		//   At this time, we also have `Lua.codeLens.enable` set to false, but it is unknown if that is necessary along with
+		//   `gitlens.codeLens.enabled` being set to false.
+		//   [Codelens keeps jumping around as user types · Issue #198062 · microsoft/vscode](https://github.com/microsoft/vscode/issues/198062)
+		"gitlens.codeLens.enabled": false,
+
+		// -- --------------------------------------------------------------------- --
+
 	}
 }

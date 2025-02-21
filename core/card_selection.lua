@@ -1136,6 +1136,11 @@ function CardArea:update(dt)
 	if self.cards then
 		for i, card in ipairs(self.cards) do
 			card.__kb_index = i
+			if card:in_user_area() then
+				AMA.vox:assign_next_talon_id(card)
+			else
+				card.__talon_id = nil
+			end
 		end
 	end
 end

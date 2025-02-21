@@ -435,9 +435,28 @@ local function handle_selectCard(command)
 	}
 end
 
+local function selectMultipleCardsWithTalonIDs_Helper(command)
+	local talon_ids = command.data.cardIDs or {}
+	local successes = {}
+	for i, talon_id in ipairs(talon_ids) do
+		local success = AMA.Voxlatro:toggle_with_talon_id(talon_id)
+		successes[talon_id] = success
+	end
+	print("Toggled Selected by ID as Requested: " .. inspect(successes))
+
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = successes}
+	}
+end
+
 local function handle_selectMultipleCards(command)
 	-- Expected Command Data Format:
 	-- cardNumbers: list of 1-based indices of cards to select
+	print("Select Multiple Cards Command Received: " .. inspect(command, {depth=5}))
+	if command.data.cardIDs ~= nil then
+		return selectMultipleCardsWithTalonIDs_Helper(command)
+	end
 
 	local card_numbers = command.data.cardNumbers or {}
 	for i, card_number in ipairs(card_numbers) do
@@ -886,9 +905,13 @@ local command_handlers = {
         overlay_menu = RequiredOverlayMenuState.FORBID
     },
     selectMultipleCards = {
-        handler = handle_selectMultipleCards,
-        data_keys = {cardNumbers = true},
-        overlay_menu = RequiredOverlayMenuState.FORBID
+ 		handler = handle_selectMultipleCards,
+		data_keys = {cardNumbers = false, cardIDs = false},
+		overlay_menu = RequiredOverlayMenuState.FORBID,
+		conditions = function(command)
+			-- Ensure at least one of `cardNumbers` or `cardIDs` is provided
+			return command.data.cardNumbers or command.data.cardIDs
+		end
     },
     invertCardSelection = {
         handler = handle_invertCardSelection,

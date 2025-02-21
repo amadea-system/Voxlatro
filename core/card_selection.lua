@@ -1040,7 +1040,76 @@ function AMA.Voxlatro:cycle_selected(amount)
 	end
 end
 
--- Monkey-patching
+-- ----- Card Helpers -----
+
+--- Determines if the card is in the currently selected area
+--- @return boolean boolean True if the card is in the currently selected area, false otherwise
+function Card:is_area_selected()
+	return self.area ~= nil and self.area == G.kb_selected_area
+end
+
+--- Determines if the card is in a user intractable gameplay area or if it's in a non-gameplay area
+--- Examples of non-gameplay areas are View Deck UI Menu, Collection UI Menu, Title Screen, etc.
+--- @return boolean boolean True if the card is in a user intractable gameplay area, false otherwise
+function Card:in_user_area()
+	if self.area == nil then return false end
+	return self.area:is_user_area()
+end
+
+-- ----- CardArea Helpers -----
+--- Determines if the card is a default selection area.
+--- This is based both on the area type, and the current game state.
+--- @return boolean boolean True if the card area is a default selection area, false otherwise
+function Card:in_default_selection_area()
+	if self.area == nil then return false end
+
+	if self.area == G.hand and G.STATE == G.STATES.SELECTING_HAND then return true end
+
+	if self.area == G.pack_cards
+		and (
+			G.STATE == G.STATES.TAROT_PACK
+			or G.STATE == G.STATES.PLANET_PACK
+			or G.STATE == G.STATES.SPECTRAL_PACK
+			or G.STATE == G.STATES.BUFFOON_PACK
+			or G.STATE == G.STATES.STANDARD_PACK
+		) then
+		return true
+	end
+
+	if self.area == G.joker
+		and (
+			G.STATE == G.STATES.BLIND_SELECT
+			or G.STATE == G.STATES.HAND_PLAYED
+			or G.STATE == G.STATES.ROUND_EVAL
+		) then
+		return true
+	end
+
+	if self.area == G.shop_jokers and G.STATE == G.STATES.SHOP then return true end
+
+	return false
+end
+
+
+---Determines if the cardArea is a user intractable gameplay area or if it's a non-gameplay area
+---@return boolean True if the cardArea is a user intractable gameplay area, false otherwise
+function CardArea:is_user_area()
+	if self.config ~= nil then
+		if self.config.type == "deck" then return false end
+		if self.config.type == "title" then return false end
+	end
+
+	local gameplay_areas = {G.hand, G.jokers, G.consumeables, G.shop_jokers, G.shop_vouchers, G.shop_booster, G.pack_cards}
+	-- TODO: There are a few cases where the area will be one of the above, but the card is not actually in a user intractable area.
+	--       (For Example, the deck of cards is in the hand (I think) area.
+	for _, gp_area in pairs(gameplay_areas) do -- Use `pairs()` instead of `ipairs()`
+		if gp_area and self == gp_area then return true end
+	end
+	return false
+end
+
+
+-- ----- Monkey-patching -----
 
 local update_card = Card.update
 local update_area = CardArea.update

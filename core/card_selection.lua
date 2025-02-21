@@ -359,7 +359,44 @@ function AMA.Voxlatro:toggle_selected_1idx(index, allow_negative)
 	print("card ~= nil" .. (card ~= nil and "true" or "false"))
 
 	self:toggle_card_highlight(card)
+end
 
+--- Handles toggling card selection by a Talon ID
+--- @param talon_id string The Talon ID of the card to toggle selection of
+function AMA.Voxlatro:toggle_with_talon_id(talon_id)
+	--- Search through all valid selection car areas for the card with the specified Talon ID
+	--- If the target card exists and is selectable:
+	---   - Sets the area the card is in as the selected area
+	---   - Toggles highlight state of card at offset + index 
+	---   - Updates hover state and last highlighted card tracking
+	---   - Unhighlights previous card if one exists
+
+	local results = self:get_card_by_talon_id(talon_id)
+	if not results then
+		return false
+	end
+
+	local card = results.card
+	local area_to_select = results.area_name
+
+	if (card.area == G.hand) and (G.STATE == G.STATES.HAND_PLAYED) then 
+		print("Can't select card in hand when hand is being played!!!")
+		card:juice_up(0.2, 0.2)
+		return false
+	end
+
+	print("Selecting Card with Talon-ID " .. talon_id .. " in Area: " .. area_to_select)
+
+	-- Set the selected area to the area the card is in
+	self:set_selected(area_to_select)
+
+	if not G.kb_selected_area or not G.kb_selected_area.cards then 
+		print("Error setting selected area to card " .. talon_id .. " area")
+		return false
+	end
+
+	self:toggle_card_highlight(card)
+	return true
 end
 
 --- Attempts to select the default card area based on the current game state if no area is currently selected

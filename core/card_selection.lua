@@ -34,6 +34,7 @@ local UNHIGHLIGHT_JOKER_AND_SHOP_CARDS_WHEN_SELECTING_ANOTHER_CARD = true
 --- @field selected_id? string The Area ID of the currently selected card area. Such as 'hand', 'jokers', 'consumeables', 'shop_jokers', 'shop_vouchers', 'shop_booster', 'pack_cards'
 --- @field last_state string? Used in Card:update() to track the last state G.STATE was in. When G.STATE changes, we reset Vars and potentially set it as unsafe to cash out.
 --- @field last_highlighted Card? The last card that was highlighted
+--- @field assigned_talon_ids table<string, Card> A table of all assigned Talon IDs and their corresponding cards.
 AMA.Voxlatro = Object:extend()
 
 -- --- Voxlatro Class Methods ---
@@ -48,6 +49,9 @@ function AMA.Voxlatro:init()
     self.last_card_info_dump_time = love.timer.getTime()  -- Units: Seconds
     self.dump_card_info_interval = 0.5  -- Units: Seconds
 
+	-- --- Talon ID Tracking ---
+	self.assigned_talon_ids = {}
+
 end
 
 -- ---------- Initialization ----------
@@ -60,6 +64,111 @@ AMA.vox = amy
 
 
 -- ---------- Validation ----------
+
+-- ---------- Talon ID Functions ----------
+
+--- Itterates over all assigned Talon IDs and removes any that are no longer valid
+function AMA.Voxlatro:clean_talon_ids()
+	for id, card in pairs(self.assigned_talon_ids) do
+		-- if not card or not card.__talon_id then
+		-- 	self.assigned_talon_ids[id] = nil
+		-- end
+		if card ~= nil and (card.removed or card.__talon_id == nil) then
+			self.assigned_talon_ids[id] = nil
+			card.__talon_id = nil
+		end
+	end
+end
+
+--- Returns the next available Talon ID
+--- @return string The next available Talon ID. 2-Character String
+function AMA.Voxlatro:get_next_talon_id()
+	self:clean_talon_ids()
+	local next_id = "AA"
+	while self.assigned_talon_ids[next_id] do
+		local char1 = next_id:sub(1, 1)
+		local char2 = next_id:sub(2, 2)
+		if char2 == "Z" then
+			if char1 == "Z" then
+				error("Out of Talon IDs!")
+			end
+			char1 = string.char(char1:byte() + 1)
+			char2 = "A"
+		else
+			char2 = string.char(char2:byte() + 1)
+		end
+		next_id = char1 .. char2
+	end
+	return next_id
+end
+
+--- Assigns the next available Talon ID to the specified card
+--- @param card Card The card to assign the next available Talon ID to
+function AMA.Voxlatro:assign_next_talon_id(card)
+	self:clean_talon_ids()
+
+	-- Check if the card already has a Talon ID
+	if card.__talon_id ~= nil then
+		return
+	end
+	local next_id = self:get_next_talon_id()
+	card.__talon_id = next_id
+	self.assigned_talon_ids[next_id] = card
+end
+
+
+---Get a card, and it's area name by it's talon ID.
+function AMA.Voxlatro:get_card_by_talon_id(talon_id)
+
+	print("Trying to Get Card with Talon-ID " .. inspect(talon_id))
+
+	local possible_areas = {"hand", "jokers", "consumeables", "shop_jokers", "shop_vouchers", "shop_booster", "pack_cards"}
+	local card = nil
+	local area_to_select = nil
+	for _, area_name in ipairs(possible_areas) do
+		-- print("\nChecking Area: " .. inspect(area.config, {depth=1}))
+		print("Checking Area: " .. area_name)
+		local area = G[area_name]
+		-- TODO: Don't check areas that can't be valid for the current game state.
+		if area and area.cards then
+			for _, c in ipairs(area.cards) do
+				if c.__talon_id == talon_id then
+					print("Card with Talon-ID " .. talon_id .. " found in Area: " .. inspect(area.config, {depth=1}))
+					card = c
+					area_to_select = area_name
+					break
+				else
+					print("Card " .. c.__talon_id .. " ~= " .. talon_id)
+				end
+			end
+		end
+		if card then break end
+	end
+
+	if not card or not area_to_select then
+		print("Card with Talon-ID " .. talon_id .. " not found!")
+		return nil
+	end
+	return {card=card, area_name=area_to_select}
+end
+
+function AMA.Voxlatro:get_card_and_select_area_by_talon_id(talon_id)
+
+	local ca = self:get_card_by_talon_id(talon_id)
+	if not ca then
+		return nil
+	end
+
+	if (ca.card.area == G.hand) and (G.STATE == G.STATES.HAND_PLAYED) then 
+		print("Can't select card in hand when hand is being played!!!")
+		ca.card:juice_up(0.2, 0.2)
+		return {card=ca.card, area_selected=false}
+	end
+
+	self:set_selected(ca.area_name)
+	return {card=ca.card, area_selected=true}
+
+end
 
 -- ---------- Local Functions ----------
 

@@ -1162,13 +1162,13 @@ function CardArea:get_cardarea_name()
 
 		-- --- Primary Card Areas used in `card_selection.lua` --- --
 
-		"hand",    -- Hand of Playing Cards
-		"jokers",  -- Currently owned jokers
-		"consumeables",  -- Currently owned consumable cards
-		"shop_jokers",  -- Jokers in the shop
+		"hand",           -- Hand of Playing Cards
+		"jokers",         -- Currently owned jokers
+		"consumeables",   -- Currently owned consumable cards
+		"shop_jokers",    -- Jokers in the shop
 		"shop_vouchers",  -- Vouchers in the shop
-		"shop_booster",  -- Booster packs in the shop
-		"pack_cards",  -- The second row of cards in Arcana & Spectral Packs
+		"shop_booster",   -- Booster packs in the shop
+		"pack_cards",     -- The second row of cards in Arcana & Spectral Packs
 		
 		-- --- Other Areas --- --
 		--   More areas may exist, but these are the ones we know about

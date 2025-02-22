@@ -426,7 +426,7 @@ end
 local function handle_selectCard(command)
 
 	local index = command.data.cardNumber or 1
-	AMA.Voxlatro:toggle_selected_1idx(index)
+	AMA.card_sel:toggle_selected_1idx(index)
 	print("Toggled Selected as Requested: " .. index)
 
 	return {
@@ -460,7 +460,7 @@ local function handle_selectMultipleCards(command)
 
 	local card_numbers = command.data.cardNumbers or {}
 	for i, card_number in ipairs(card_numbers) do
-		AMA.Voxlatro:toggle_selected_1idx(card_number)
+		AMA.card_sel:toggle_selected_1idx(card_number)
 	end
 	print("Toggled Selected as Requested: " .. inspect(card_numbers))
 
@@ -476,8 +476,8 @@ local function handle_invertCardSelection(command)
 
 	local except_cards = command.data.exceptCards or {}
 
-	AMA.Voxlatro:try_select_default_cardarea()  -- If no cardArea is selected, select the default one.
-	local number_of_cards = AMA.Voxlatro:get_size()
+	AMA.card_sel:try_select_default_cardarea()  -- If no cardArea is selected, select the default one.
+	local number_of_cards = AMA.card_sel:get_size()
 	if number_of_cards == 0 then
 		AMA.talon_rpc:send_response(command.uuid, {error = "No Cards In Selected Area or No Area Selected (e1)"})
 		return
@@ -504,11 +504,11 @@ local function handle_invertCardSelection(command)
 
 	for i, card_number in ipairs(cards_to_lower) do
 		-- print("[INVERTING] Lowering Card #" .. card_number)
-		AMA.Voxlatro:toggle_selected_1idx(card_number)
+		AMA.card_sel:toggle_selected_1idx(card_number)
 	end
 	for i, card_number in ipairs(cards_to_raise) do
 		-- print("[INVERTING] Raising Card #" .. card_number)
-		AMA.Voxlatro:toggle_selected_1idx(card_number)
+		AMA.card_sel:toggle_selected_1idx(card_number)
 	end
 
 	return {
@@ -852,17 +852,17 @@ local function handle_voxlatroAction(command)
 	end
 
 	if action == "cashOut" then
-		outcome = AMA.Voxlatro:use__cash_out()
+		outcome = AMA.card_sel:use__cash_out()
 	elseif action == "playHand" then
-		outcome = AMA.Voxlatro:use__play_hand()
+		outcome = AMA.card_sel:use__play_hand()
 	elseif action == "selectBlind" then
-		outcome = AMA.Voxlatro:use__select_blind()
+		outcome = AMA.card_sel:use__select_blind()
 	elseif action == "buyOrRedeemOrUse" then
-		outcome = AMA.Voxlatro:use__buy_or_use_or_redeem()
+		outcome = AMA.card_sel:use__buy_or_use_or_redeem()
 	elseif action == "discard" then
-		outcome = AMA.Voxlatro:discard__discard_cards()
+		outcome = AMA.card_sel:discard__discard_cards()
 	elseif action == "skip" then
-		outcome = AMA.Voxlatro:discard__skip_or_next()
+		outcome = AMA.card_sel:discard__skip_or_next()
 	else 
 		AMA.talon_rpc:send_response(command.uuid, {error = "Unknown Action: " .. action})
 		return
@@ -1081,46 +1081,46 @@ end
 --- Table defining the default keybinds for the mod that are only available when no Overlay Menu is open
 keybinds = {
 	["Inc10"] = function()
-		AMA.Voxlatro:add_offset(10) -- 
+		AMA.card_sel:add_offset(10)
 	end,
 	["Dec10"] = function()
-		AMA.Voxlatro:add_offset(-10) --
+		AMA.card_sel:add_offset(-10)
 	end,
-	["Discard"] = function() AMA.Voxlatro:context_discard_or_skip() end,
-	["Use"] = function() AMA.Voxlatro:context_use() end,
-	["BuyAndUse"] = function() AMA.Voxlatro:buy_and_use() end,
+	["Discard"] = function() AMA.card_sel:context_discard_or_skip() end,
+	["Use"] = function() AMA.card_sel:context_use() end,
+	["BuyAndUse"] = function() AMA.card_sel:buy_and_use() end,
 	["SelectHand"] = function()
-		AMA.Voxlatro:set_selected("hand")
+		AMA.card_sel:set_selected("hand")
 	end,
 	["SelectJokers"] = function()
-		AMA.Voxlatro:set_selected("jokers")
+		AMA.card_sel:set_selected("jokers")
 	end,
 	["SelectConsumeables"] = function()
-		AMA.Voxlatro:set_selected("consumeables")
+		AMA.card_sel:set_selected("consumeables")
 	end,
 	["SelectShopJokers"] = function()
-		AMA.Voxlatro:set_selected("shop_jokers")
+		AMA.card_sel:set_selected("shop_jokers")
 	end,
 	["SelectShopVouchers"] = function()
-		AMA.Voxlatro:set_selected("shop_vouchers")
+		AMA.card_sel:set_selected("shop_vouchers")
 	end,
 	["SelectShopBooster"] = function()
-		AMA.Voxlatro:set_selected("shop_booster")
+		AMA.card_sel:set_selected("shop_booster")
 	end,
 	["SelectPackCards"] = function()
-		AMA.Voxlatro:set_selected("pack_cards")
+		AMA.card_sel:set_selected("pack_cards")
 	end,
 	["SelectCycleLeft"] = function()
-		AMA.Voxlatro:cycle_selected(-1)
+		AMA.card_sel:cycle_selected(-1)
 	end,
 	["SelectCycleRight"] = function()
-		AMA.Voxlatro:cycle_selected(1)
+		AMA.card_sel:cycle_selected(1)
 	end,
 	["DeselectAll"] = function()
-		AMA.Voxlatro:reset_vars()
+		AMA.card_sel:reset_vars()
 	end,
-	["Reroll"] = function() AMA.Voxlatro:reroll() end,
-	["Sell"] = function() AMA.Voxlatro:sell() end,
+	["Reroll"] = function() AMA.card_sel:reroll() end,
+	["Sell"] = function() AMA.card_sel:sell() end,
 	["SortSuit"] = sort_suit,
 	["SortRank"] = sort_rank,
 	["PeekDeck"] = peek_deck,
@@ -1128,7 +1128,7 @@ keybinds = {
 
 for i = 1, 10 do
 	keybinds["Select" .. tostring(i % 10)] = function()
-		AMA.Voxlatro:toggle_selected_0idx((i + 9) % 10)
+		AMA.card_sel:toggle_selected_0idx((i + 9) % 10)
 	end
 end
 
@@ -1190,9 +1190,9 @@ if DEBUG_MODE then
 		key_pressed = "f1",
 		action = function()
 			if info_dump_mode == "off" then
-				AMA.Voxlatro.info_dump_mode = "trigger"
+				AMA.card_sel.info_dump_mode = "trigger"
 			else
-				AMA.Voxlatro.info_dump_mode = "off"
+				AMA.card_sel.info_dump_mode = "off"
 			end
 		end
 	}
@@ -1201,7 +1201,7 @@ if DEBUG_MODE then
 	SMODS.Keybind {
 		key_pressed = "f2",
 		action = function()
-			AMA.Voxlatro.info_dump_mode = "once"
+			AMA.card_sel.info_dump_mode = "once"
 		end
 	}
 

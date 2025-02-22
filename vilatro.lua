@@ -533,9 +533,12 @@ local function handle_moveCard(command)
 
 	print("Move Card Command Received: " .. inspect(command, {depth=5}))
 
-	local card_number = command.data.cardNumber
+	local card_number = command.data.cardNumber or command.data.cardID
+	local cardArea = command.data.cardArea
 	local movement = command.data.movement
 	local move_type = command.data.moveType
+
+	local cardName = (type(card_number) == "string" and ("Card ID: " .. tostring(card_number))) or ("Card #" .. tostring(card_number))
 
 	if not card_number or not movement or not move_type then
 		AMA.talon_rpc:send_response(command.uuid, {error = "Missing Required Keys in Move Card Command: " .. inspect(command.data)})
@@ -564,26 +567,30 @@ local function handle_moveCard(command)
 	local result = {state=false, msg="Invalid Movement Instructions"}
 	if move_type == "position" then
 		-- Move the card to the specified position
-		result = AMA.Voxlatro:move_card_to_position(card_number, movement.position)
-		print("Moved Card #" .. card_number .. " to Position #" .. movement.position)
+		result = AMA.card_sel:move_card_to_position(card_number, movement.position, cardArea)
+		print("Moved " .. cardName .. " to Position #" .. movement.position)
 	elseif move_type == "moveToLimit" then
-		result = AMA.Voxlatro:move_card_to_limit(card_number, movement.direction)
-		print("Moved Card #" .. card_number .. " to Limit " .. movement.direction)
+		result = AMA.card_sel:move_card_to_limit(card_number, movement.direction, cardArea)
+		print("Moved " .. cardName .. " to Limit " .. movement.direction)
 
 	elseif move_type == "vector" then
 		-- Move the card a relative amount of places left or right
-		result = AMA.Voxlatro:move_card_relative(card_number, movement.vector)
-		print("Moved Card #" .. card_number .. " " .. movement.vector .. " places")
+		result = AMA.card_sel:move_card_relative(card_number, movement.vector, cardArea)
+		print("Moved " .. cardName .. " " .. movement.vector .. " places")
 	elseif move_type == "swapWith" then
 		-- Swap the card with another card
-		-- result = AMA.Voxlatro:swap_cards(card_number, movement.swapWith)
+		-- result = AMA.card_sel:swap_cards(card_number, movement.swapWith, cardArea)
 		result = {state=false, msg="Not Implemented"}
-		print("Swapped Card #" .. card_number .. " with Card #" .. movement.swapWith)
+		print("Swapped " .. cardName .. " with Card #" .. movement.swapWith)
 	end
 
 	if not result.state then
 		AMA.talon_rpc:send_response(command.uuid, {warning = result.msg})
 		return
+	end
+
+	if result.state and command.data.resetAreaAfterMove then
+		AMA.card_sel:reset_vars()
 	end
 
 	return {

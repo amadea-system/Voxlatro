@@ -128,7 +128,7 @@ end
 
 ---Get a card, and it's area name by it's talon ID.
 ---@param talon_id string The Talon ID of the card to get.
----@return table? {card: Card, area_name: string} The card and area name, or nil if the card or area was not found. 
+---@return table {card: Card?, area_name: string?} The card and area name. Values may be nil if they could not be found.
 function AMA.Voxlatro:get_card_by_talon_id(talon_id)
 
 	print("Trying to Get Card with Talon-ID " .. inspect(talon_id))
@@ -138,17 +138,17 @@ function AMA.Voxlatro:get_card_by_talon_id(talon_id)
 
 	if card == nil then
 		print("Card with Talon-ID " .. talon_id .. " not found!")
-		return nil
+		return {card=nil, area_name=nil}
 	elseif card.area == nil then
 		print("Card with Talon-ID " .. talon_id .. " has no area!")
-		return nil
+		return {card=card, area_name=nil}
 	end
 
 	local area_to_select = card.area:get_cardarea_name()
 
 	if not area_to_select then
 		print("Could not find CardArea name for Card with Talon-ID " .. talon_id)
-		return nil
+		return {card=card, area_name=nil}
 	end
 	return {card=card, area_name=area_to_select}
 end
@@ -156,7 +156,7 @@ end
 function AMA.Voxlatro:get_card_and_select_area_by_talon_id(talon_id)
 
 	local ca = self:get_card_by_talon_id(talon_id)
-	if not ca then
+	if not ca or not ca.card or not ca.area_name then
 		return nil
 	end
 
@@ -373,7 +373,7 @@ function AMA.Voxlatro:toggle_with_talon_id(talon_id)
 	---   - Unhighlights previous card if one exists
 
 	local results = self:get_card_by_talon_id(talon_id)
-	if not results then
+	if not results or not results.card or not results.area_name then
 		return false
 	end
 
@@ -454,123 +454,115 @@ function AMA.Voxlatro:reroll()
 end
 
 
---- Moves the specified card to the specified position. (Card number references the current area)
---- @param card_number number The card number to move. 1-based index
+---@class CardForMove
+---@field state boolean If the function was successful or not.
+---@field msg string? message explaining the result of the function.
+---@field card Card? The card object that was found.
+---@field area_name string? The name of the area the card was found in.
+---@field area CardArea? The card area object the card was found in.
+---@field kb_index number? The 1-based index of the card in the current area.
+
+
+--- Moves the specified card to the specified position.
+---   If card_id is a number, it references the kb_idx of the cards in the current area, or area provided
+---   If card_id is a string, it references the Talon ID of the card to move.
+--- @param card_id number|string? The CardID or the card number of the card to move
 --- @param position number The position to move the card to. 1-based index
+--- @param card_area string? The name of the card area the card to move is in. If not provided, the currently selected area will be used. Only valid for numeric card_id.
+--- @param move_card CardForMove? The card object and area name to move. If not provided, the card will be fetched by the card_id & card_area.
 --- @return table table The return value of the function.
 ---  - `state`: boolean If the function was successful or not.
 ---  - `msg`: string message explaining the result of the function.
-function AMA.Voxlatro:move_card_to_position(card_number, position)
+function AMA.Voxlatro:move_card_to_position(card_id, position, card_area, move_card)
 
-	if card_number == nil or position == nil then
-		return {state=false, msg="Must Provide cardNumber and position"}
+	if (card_id == nil and move_card == nil) or position == nil then
+		return {state=false, msg="Must Provide cardNumber/cardID/CardForMove obj and position"}
 	end
 
-	local number_of_cards = self:get_size()
-
-	if number_of_cards == 0 then
-		return {state=false, msg="No Cards In Selected Area"}
-	end
-	if card_number < 1 or card_number > number_of_cards then
-		return {state=false, msg="Invalid Card Number: " .. card_number}
+	local card_dets = move_card or self:_get_card_for_move(card_id, card_area , true)
+	if not card_dets then
+		return {state=false, msg="Error Getting Card Details"}
+	elseif not card_dets.state then
+		return card_dets
 	end
 
+	local number_of_cards = card_dets.area:get_card_count()
 	if position < 1 or position > number_of_cards then
 		return {state=false, msg="Invalid Destination: " .. position}
 	end
 
 	-- If the destination is the same as the current card, then there's nothing to do. Return.
-	if position == card_number then
+	if position == card_dets.kb_index then
 		return {state=false, msg="Destination Is Same As Current Card"}
 	end
 
-	local vector = position - card_number
-	return self:move_card_relative(card_number, vector)
+	local vector = position - card_dets.kb_index
+	return self:move_card_relative(card_id, vector, card_area, move_card)
 end
 
 --- Moves the specified card all the way to the left or right edge of the current card area
---- @param card_number number The card number to move. 1-based index
+--- @param card_id number|string? The CardID or the card number of the card to move
 --- @param direction number The direction to move the card in. negative values will move the card to the left, positive values will move the card to the right.
+--- @param card_area string? The name of the card area the card to move is in. If not provided, the currently selected area will be used. Only valid for numeric card_id.
+--- @param move_card CardForMove? The card object and area name to move. If not provided, the card will be fetched by the card_id & card_area.
 --- @return table table The return value of the function.
 ---  - `state`: boolean If the function was successful or not.
 ---  - `msg`: string message explaining the result of the function.
-function AMA.Voxlatro:move_card_to_limit(card_number, direction)
+function AMA.Voxlatro:move_card_to_limit(card_id, direction, card_area, move_card)
 
 	if direction == nil then
 		return {state=false, msg="Must Provide Direction (-1/+1)"}
 	end
 
-	local number_of_cards = self:get_size()
-
-	if number_of_cards == 0 then
-		return {state=false, msg="No Cards In Selected Area"}
-	end
-
-	if card_number < 1 or card_number > number_of_cards then
-		return {state=false, msg="Invalid Card Number: " .. card_number}
+	local card_dets = move_card or self:_get_card_for_move(card_id, card_area , true)
+	if not card_dets then
+		return {state=false, msg="Error Getting Card Details"}
+	elseif not card_dets.state then
+		return card_dets
 	end
 
 	if direction < 0 then
-		return self:move_card_to_position(card_number, 1)
+		return self:move_card_to_position(card_id, 1, card_area, move_card)
 	elseif direction > 0 then
-		return self:move_card_to_position(card_number, number_of_cards)
+		local number_of_cards = card_dets.area:get_card_count()
+		return self:move_card_to_position(card_id, number_of_cards, card_area, move_card)
 	end
 
 	return {state=false, msg="Invalid Direction: " .. direction}
 end
 
 --- Moves the specified card to the specified position. (Card number references the current area)
---- @param card_number number The card number to move. 1-based index
+--- @param card_id number|string? The CardID or the card number of the card to move
 --- @param vector number The vector to move the card by. Positive values will move the card to the right, negative values will move the card to the left.
+--- @param card_area string? The name of the card area the card to move is in. If not provided, the currently selected area will be used. Only valid for numeric card_id.
+--- @param move_card CardForMove? The card object and area name to move. If not provided, the card will be fetched by the card_id & card_area.
 --- @return table table The return value of the function.
 ---  - `state`: boolean If the function was successful or not.
 ---  - `msg`: string message explaining the result of the function.
-function AMA.Voxlatro:move_card_relative(card_number, vector)
-	-- If there is no selected area set (not G.kb_selected_area) there's nothing to do. Return.
-	if not G.kb_selected_area then return {state=false, msg="No Selected Area"} end
+function AMA.Voxlatro:move_card_relative(card_id, vector, card_area, move_card)
 
-	-- If the selected area doesn't exist. then it's likly the game has changed to a state where the selected area is no longer present.
-	-- Reset state variables and return.
-	if not G[self.selected_id] then 
-		self:reset_vars()
-		return {state=false, msg="Selected Area Does Not Exist"}
+	if (card_id == nil and move_card) or vector == nil then
+		return {state=false, msg="Must Provide cardNumber/cardID/CardForMove obj and vector"}
 	end
 
-	local number_of_cards = self:get_size()
-	-- Since this command will only ever be called via the RPC, ignore the offset
-
-	if number_of_cards == 0 then
-		return {state=false, msg="No Cards In Selected Area"}
+	local card_dets = move_card or self:_get_card_for_move(card_id, card_area , true)
+	if not card_dets then
+		return {state=false, msg="Error Getting Card Details"}
+	elseif not card_dets.state then
+		return card_dets
 	end
 
-	if card_number < 1 or card_number > number_of_cards then
-		return {state=false, msg="Invalid Card Number: " .. card_number}
-	end
-
-	-- if vector > number_of_cards or vector < -number_of_cards then
-	-- 	return {state=false, msg="Invalid Vector: " .. vector}
-	-- end
+	local card_number = card_dets.kb_index
 
 	-- Perform the move
-	-- local card = G.kb_selected_area.cards[card_number]
-	-- local original_card_rank = card.rank
-	-- local original_other_card_rank = card.area.cards[card.rank].rank
-
-	-- card.rank = card.rank + vector
-	-- card.area.cards[card.rank].rank = card.rank + vector
-	-- table.sort(card.area.cards, function (a, b) return a.rank < b.rank end)
-	-- card.area:align_cards()
-
-	-- print("Card Moved! Card #" .. card_number .. " Moved To #" .. card.rank .. " (Original Rank: " .. original_card_rank .. ")")
-	-- print("                    Other Moved To #" .. card.area.cards[card.rank].rank .. " (Original Rank: " .. original_other_card_rank .. ")")
-
 	local direction = vector > 0 and "right" or "left"
 	local ret = nil
 	for i = 0, math.abs(vector) - 1 do
 		-- Only align cards at the end of the move
 		local sign = vector > 0 and 1 or (vector == 0 and 0 or -1)
-		local card_number = card_number + (i * sign)
-		ret = self:_move_card(card_number, direction, i == (math.abs(vector)-1))
+		card_number = card_number + (i * sign)
+		-- ret = self:_move_card(card_number, direction, i == (math.abs(vector)-1))
+		ret = self:_move_card(card_number, card_dets.area, direction, i == (math.abs(vector)-1))
 		if not ret.state then
 			print("Error Moving Card Partway! " .. ret.msg)
 			return ret
@@ -580,32 +572,195 @@ function AMA.Voxlatro:move_card_relative(card_number, vector)
 end
 
 
+--- Tries to get the card with the specified Talon ID and the area it is in.
+--- If the card is found, the card is returned.
+--- If the card is not found, an error message and state is returned in a table.
+--- Helper function for `AMA.Voxlatro:_get_card_for_move`. You should use that function instead of this one.
+--- @param card_id string? The Talon ID of the card to move.
+--- @return table CardForMove The return value of the function.
+---  - `state`: boolean If the function was successful or not.
+---  - `msg`: string message explaining the result of the function.
+---  - `card`: Card? The card object that was found.
+---  - `area_name`: string? The name of the area the card was found in.
+---  - `area`: CardArea? The card area object the card was found in.
+--- @private
+function AMA.Voxlatro:_get_card_for_move__by_id(card_id)
+
+	if type(card_id) ~= "string" then
+		return {state=false, msg="Invalid Card ID Type: " .. type(card_id)}
+	end
+
+	local results = self:get_card_by_talon_id(card_id)
+
+	local card = (results and results.card) or nil
+	local area_name = (results and results.area_name) or nil
+	local area = (results and G[area_name]) or nil
+
+	if not card then
+		return {state=false, msg="Card " .. card_id .. " not found!"}
+	elseif not area_name then
+		return {state=false, msg="Unable to select find the Area that Card " .. card_id .. " is in!"}
+	elseif not area then
+		return {state=false, msg="The Area `" .. area_name .. "` that Card " .. card_id .. " is in does not exist!"}
+	end
+
+	-- I don't really think that this check is needed, as how could the area have 0 cards if the card was found?
+	-- But I'll leave it in for now, as the check is needed when we're trying to get a card by number.
+	local number_of_cards = area:get_card_count()
+	if number_of_cards == 0 then
+		return {state=false, msg="No Cards In Area " .. area_name}
+	end
+
+	return {state=true, msg="Card Found", card=card, area_name=area_name, area=area}
+
+end
+
+--- Tries to get the card with the specified Card Number and the area it is in.
+--- If the card is found, the card is returned.
+--- If the card is not found, an error message and state is returned in a table.
+---   The card number references the kb_idx of the cards in the current area, or area provided
+--- Helper function for `AMA.Voxlatro:_get_card_for_move`. You should use that function instead of this one.
+--- @param card_number number? The card number to move. 1-based index
+--- @param card_area_name string? The name of the card area the card to move is in. If not provided, the currently selected area will be used. Only valid for numeric card_id.
+--- @return table CardForMove The return value of the function.
+---  - `state`: boolean If the function was successful or not.
+---  - `msg`: string message explaining the result of the function.
+---  - `card`: Card? The card object that was found.
+---  - `area_name`: string? The name of the area the card was found in.
+---  - `area`: CardArea? The card area object the card was found in.
+--- @private
+function AMA.Voxlatro:_get_card_for_move__by_number(card_number, card_area_name)
+
+
+	local function failure(_area_name, _cleanup_needed, msg)
+		if _cleanup_needed and self.selected_id and _area_name == self.selected_id then
+			-- If the selected area doesn't exist. then it's likly the game has changed to a state where the selected area is no longer present.
+			-- Reset state variables and return.
+			self:reset_vars()
+		end
+		return {state=false, msg=msg}
+	end
+
+	if type(card_number) ~= "number" then
+		return {state=false, msg="Invalid Card Number Type: " .. type(card_number)}
+	end
+
+	local card = nil
+	local area = nil
+
+	-- If no card_area_name is provided, try to use the currently selected area
+	if not card_area_name then
+		card_area_name = self.selected_id
+	end
+	
+	-- Verify that we have a card_area_name
+	if not card_area_name then
+		return failure(card_area_name, false, "No CardArea Name Provided or No CardArea Selected")
+	end
+
+	-- Make sure the card area exists
+	if not G[card_area_name] then
+		return failure(card_area_name, true, "Area " .. card_area_name .. " does not exist!")
+	end
+	-- Store the area
+	area = G[card_area_name]
+	-- area_name = card_area_name
+
+	-- Sanity check card area
+	if self.selected_id == card_area_name and G.kb_selected_area ~= area then
+
+		local kb_sel_name = G.kb_selected_area and G.kb_selected_area:get_cardarea_name() or "nil"
+		local stored_area_name = area and area:get_cardarea_name() or "nil"
+		return failure(card_area_name, true, "Sanity Check Failed: Error. Selected Area Mismatch. El Psy Kongroo.\n  Selected_id: " .. self.selected_id .. "\n  card_area_name: " .. card_area_name .. "\n  G.kb_selected_area name: " .. kb_sel_name .. "\n  area name: " .. stored_area_name)
+	end
+
+	if area:get_card_count() == 0 then
+		-- ? Do we really need to clean up on this failure?
+		return failure(card_area_name, true, "Area " .. card_area_name .. " does not have any cards!")
+	end
+	-- if not utils.is_table_idx_valid(G[card_area_name].cards, card_id) then
+	-- 	return {state=false, msg="Invalid Card Number: " .. card_id}
+	-- end
+
+	card = area.cards[card_number]
+	if not card then
+		return failure(card_area_name, false, "Card " .. card_number .. " not found in Area " .. card_area_name)
+	end
+
+	return {state=true, msg="Card Found", card=card, area_name=card_area_name, area=area}
+end
+
+
+--- Tries to get the card with the specified Talon ID or Card Number and the area it is in.
+--- If the card is found, the area is selected and the card is returned.
+--- If the card is not found, an error message and state is returned in a table.
+---   If card_id is a number, it references the kb_idx of the cards in the current area, or area provided
+---   If card_id is a string, it references the Talon ID of the card to move.
+--- @param card_id number|string? The card number or Talon ID of the card to move.
+--- @param card_area_name string? The name of the card area the card to move is in. If not provided, the currently selected area will be used. Only valid for numeric card_id.
+--- @param require_kb_idx boolean If true, the card must have a KB Index.
+--- @return table CardForMove The return value of the function.
+---  - `state`: boolean If the function was successful or not.
+---  - `msg`: string message explaining the result of the function.
+---  - `card`: Card? The card object that was found.
+---  - `area_name`: string? The name of the area the card was found in.
+---  - `area`: CardArea? The card area object the card was found in.
+--- @private
+function AMA.Voxlatro:_get_card_for_move(card_id, card_area_name, require_kb_idx)
+	local card_res = nil
+	if type(card_id) == "string" then
+		card_res = self:_get_card_for_move__by_id(card_id)
+	elseif type(card_id) == "number" then
+		-- If no card_area_name is provided, use the currently selected area
+		card_res = self:_get_card_for_move__by_number(card_id, card_area_name)
+	else
+		return {state=false, msg="Invalid Card ID Type: " .. type(card_id)}
+	end
+
+	if not card_res then
+		return {state=false, msg="UNEXPECTED ERROR: Card Result is nil"}
+	end
+
+	if not card_res.state then
+		return card_res
+	end
+
+	-- Sanity Check that the area and area name are valid
+	if not card_res.card or not card_res.area_name or not card_res.area then
+		return {state=false, msg="UNEXPECTED ERROR: Sanity Check Failure!! Card, Area, or Area Name is nil"}
+	end
+
+
+	if not card_res.card.__kb_index and require_kb_idx then
+		-- todo: Do we really need this check?
+		return {state=false, msg="Card " .. card_id .. " does not have a KB Index!"}
+	end
+
+	card_res.kb_index = card_res.card.__kb_index
+
+	return card_res
+end
 
 --- Moves the specified card in the specified direction by one
 --- @param card_number number The card number to move. 1-based index
+--- @param card_area CardArea The card area object the card is in.
 --- @param direction string The direction to move the card in. Valid values are "left" and "right"
 --- @private
-function AMA.Voxlatro:_move_card(card_number, direction, align_cards)
+function AMA.Voxlatro:_move_card(card_number, card_area, direction, align_cards)
 
-	if not G.kb_selected_area then return {state=false, msg="No Selected Area"} end
-
-	-- If the selected area doesn't exist. then it's likly the game has changed to a state where the selected area is no longer present.
-	-- Reset state variables and return.
-	if not G[self.selected_id] then 
-		self:reset_vars()
-		return {state=false, msg="Selected Area Does Not Exist"}
-	end
+	if not card_area then return {state=false, msg="No Area Provided to _move_card"} end
 
 	local new_card_rank = (direction == 'left' and {card_number - 1} or {card_number + 1})[1]
-	if new_card_rank < 1 or new_card_rank > #G.kb_selected_area.cards then
-		return {state=false, msg="Can not move card outside of bounds"}
+	if new_card_rank < 1 or new_card_rank > #card_area.cards then
+		return {state=false, msg="Can not move card outside of bounds! (Card #" .. card_number .. " to " .. new_card_rank .. ")"}
 	end
 
-	local focused = G.kb_selected_area.cards[card_number]
+	local focused = card_area.cards[card_number]
 	-- print("Moving Card #" .. card_number .. " " .. direction .. " (KB Select Offset: " .. G.kb_select_offset .. ")")
 	if focused == nil then
 		return {state=false, msg="Card @ " .. card_number .. " does not exist"}
 	end
+
 
 	-- TODO: Optimize This Section
 	if direction == 'left' and focused.rank > 1 then
@@ -622,6 +777,7 @@ function AMA.Voxlatro:_move_card(card_number, direction, align_cards)
 		-- self:update_cursor()
 	end
 	return {state=true, msg="Card Moved"}
+
 end
 
 --- Does one of the following actions based on the current game state:
@@ -1183,6 +1339,13 @@ function CardArea:get_cardarea_name()
 		end
 	end
 	return nil
+end
+
+--- Returns the number of cards in the CardArea
+--- @return number The number of cards in the current card area
+function CardArea:get_card_count()
+	if not self.cards then return 0 end
+	return #self.cards
 end
 
 -- ----- Monkey-patching -----

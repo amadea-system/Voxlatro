@@ -60,7 +60,15 @@ local dprint = AMA.dprint
 ---@type Voxlatro
 local amy = AMA.Voxlatro()
 amy:init()
+
+---Primary Instance of the Voxlatro Card Selection Class.
+---Same ref as `AMA.card_sel`. Use that one instead.
+---@type Voxlatro
+---@deprecated
 AMA.vox = amy
+
+---Primary Instance of the Voxlatro Card Selection Class
+---@type Voxlatro
 AMA.card_sel = amy
 
 

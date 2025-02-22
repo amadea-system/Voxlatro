@@ -61,6 +61,7 @@ local dprint = AMA.dprint
 local amy = AMA.Voxlatro()
 amy:init()
 AMA.vox = amy
+AMA.card_sel = amy
 
 
 -- ---------- Validation ----------

@@ -439,7 +439,7 @@ local function selectMultipleCardsWithTalonIDs_Helper(command)
 	local talon_ids = command.data.cardIDs or {}
 	local successes = {}
 	for i, talon_id in ipairs(talon_ids) do
-		local success = AMA.Voxlatro:toggle_with_talon_id(talon_id)
+		local success = AMA.card_sel:toggle_with_talon_id(talon_id)
 		successes[talon_id] = success
 	end
 	print("Toggled Selected by ID as Requested: " .. inspect(successes))

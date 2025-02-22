@@ -127,35 +127,27 @@ end
 
 
 ---Get a card, and it's area name by it's talon ID.
+---@param talon_id string The Talon ID of the card to get.
+---@return table? {card: Card, area_name: string} The card and area name, or nil if the card or area was not found. 
 function AMA.Voxlatro:get_card_by_talon_id(talon_id)
 
 	print("Trying to Get Card with Talon-ID " .. inspect(talon_id))
 
-	local possible_areas = {"hand", "jokers", "consumeables", "shop_jokers", "shop_vouchers", "shop_booster", "pack_cards"}
 	local card = nil
-	local area_to_select = nil
-	for _, area_name in ipairs(possible_areas) do
-		-- print("\nChecking Area: " .. inspect(area.config, {depth=1}))
-		print("Checking Area: " .. area_name)
-		local area = G[area_name]
-		-- TODO: Don't check areas that can't be valid for the current game state.
-		if area and area.cards then
-			for _, c in ipairs(area.cards) do
-				if c.__talon_id == talon_id then
-					print("Card with Talon-ID " .. talon_id .. " found in Area: " .. inspect(area.config, {depth=1}))
-					card = c
-					area_to_select = area_name
-					break
-				else
-					print("Card " .. c.__talon_id .. " ~= " .. talon_id)
-				end
-			end
-		end
-		if card then break end
+	card = self.assigned_talon_ids[talon_id]
+
+	if card == nil then
+		print("Card with Talon-ID " .. talon_id .. " not found!")
+		return nil
+	elseif card.area == nil then
+		print("Card with Talon-ID " .. talon_id .. " has no area!")
+		return nil
 	end
 
-	if not card or not area_to_select then
-		print("Card with Talon-ID " .. talon_id .. " not found!")
+	local area_to_select = card.area:get_cardarea_name()
+
+	if not area_to_select then
+		print("Could not find CardArea name for Card with Talon-ID " .. talon_id)
 		return nil
 	end
 	return {card=card, area_name=area_to_select}

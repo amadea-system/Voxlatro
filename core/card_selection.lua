@@ -1154,6 +1154,44 @@ function CardArea:is_user_area()
 	return false
 end
 
+---Searches for the name of the CardArea. Correlates to the name of the Area in the `G` table.
+---@return string? The name of the CardArea if known. nil Otherwise.
+function CardArea:get_cardarea_name()
+
+	local known_area_keys = {
+
+		-- --- Primary Card Areas used in `card_selection.lua` --- --
+
+		"hand",    -- Hand of Playing Cards
+		"jokers",  -- Currently owned jokers
+		"consumeables",  -- Currently owned consumable cards
+		"shop_jokers",  -- Jokers in the shop
+		"shop_vouchers",  -- Vouchers in the shop
+		"shop_booster",  -- Booster packs in the shop
+		"pack_cards",  -- The second row of cards in Arcana & Spectral Packs
+		
+		-- --- Other Areas --- --
+		--   More areas may exist, but these are the ones we know about
+		--   Found via searching `G`
+
+		"title_top",  -- This seems to be the card in the center of the title screen
+		"deck",  -- This is the Deck of Cards in the bottom right corner of the game area
+	}
+
+	-- Card Areas we have been unable to find in `G` --
+    -- - The Deck in the *New Run* UI Menu
+    -- - Any of the cards in the *New Challenge* UI Menu
+	-- - Any cards in the *Customize Deck* UI Menu
+	-- - Any cards in the *Collections* UI Menu
+	-- - Any cards in the *View Deck* UI Menu
+
+	for _, potential_area_name in ipairs(known_area_keys) do
+		if G[potential_area_name] and G[potential_area_name] == self then
+			return potential_area_name
+		end
+	end
+	return nil
+end
 
 -- ----- Monkey-patching -----
 

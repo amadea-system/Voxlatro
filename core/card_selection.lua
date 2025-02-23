@@ -1240,6 +1240,11 @@ function AMA.Voxlatro:cycle_selected(amount)
 	end
 end
 
+function AMA.Voxlatro:isNewUIEnabled()
+	return false
+	-- return AMA.card_ui.enable_new_ui
+end
+
 -- ----- Card Helpers -----
 
 --- Determines if the card is in the currently selected area
@@ -1397,23 +1402,249 @@ function Card:draw(layer)
 	--  - Otherwise:
 	--    - Add a Triangle Pointer to the card to indicate it's selected
 
-	
+	-- ------ Config Consts ------
+
+	-- --- Behavior of numbers on cards in default areas ---
+
+	--- @type boolean
+	--- If true, draw a number on the card even if the card is not in the currently selected area,
+	--- As long as it's area is one that would be selected by default via `Voxlatro:toggle_selected(index)`
+	local _draw_numbers_on_unselected_default_area_cards = true
+
+	--- @type boolean
+	--- If true, the number will be drawn on default area cards even when another area is selected.
+	--- Otherwise, the number will only be drawn if no other area is selected or the card is in the currently selected area.
+	--- Has no effect if `_draw_numbers_on_unselected_default_area_cards` is false.
+	local _always_draw_numbers_on_default_area_cards = false
+
+	--- @type boolean
+	--- Specific override of above setting for the Joker area
+	--- If false, the Joker area will not draw numbers when unselected even if `_draw_numbers_on_unselected_default_area_cards` is true.
+	--- Has no effect if `_draw_numbers_on_unselected_default_area_cards` is false.
+	local _draw_numbers_on_joker_area_when_unselected = true
+
+	--- @type boolean
+	--- Specific override of above setting for the Shop_Joker area
+	--- If false, the Shop_Joker area will not draw numbers when unselected even if `_draw_numbers_on_unselected_default_area_cards` is true.
+	--- Has no effect if `_draw_numbers_on_unselected_default_area_cards` is false.
+	local _draw_numbers_on_shop_joker_area_when_unselected = false
+
+	--- @type boolean
+	--- If true, draw Talon IDs on some unselected areas.
+	local _draw_ids_on_select_unselected_areas = true
+
+	local _always_draw_talon_ids = false
+
+	-- local _dont_draw_numbers_when_area_not_selected = true
+
+	if not self.__kb_index then return end
+	if not self.area then return end
+
+
+	--- @type boolean
+	--- Indicates if the card is in the currently selected area and 
+	---   if the index is within the current selection offset
+	local kb_selectable = false
 	if self.area == G.kb_selected_area 
 		and self.__kb_index
 		and self.__kb_index > G.kb_select_offset
 		and self.__kb_index <= G.kb_select_offset + 10
 	then
+		kb_selectable = true
+	end
 
-		local transform = self.VT or self.T
-		love.graphics.push()
-		love.graphics.scale(G.TILESCALE, G.TILESCALE)
-		love.graphics.translate(transform.x*G.TILESIZE+transform.w*G.TILESIZE*0.5, transform.y*G.TILESIZE+transform.h*G.TILESIZE*0.5)
-		love.graphics.rotate(transform.r)
-		love.graphics.translate(-transform.w*G.TILESIZE*0.5, -transform.h*G.TILESIZE*0.5)
+	--- @type boolean
+	--- Indicates if we need to draw a number over the card.
+	--- This should be true if one of the following is true:
+	--- - The card is in the currently selected area
+	--- - The card is in the hand area and the game is in the SELECTING_HAND state (Default Selection Area)
+	--- - The card is in the pack_cards area and the game is in one of the pack states (Default Selection Area)
+	local draw_number = false
+	local draw_talon_id = false
+	if self.area == G.kb_selected_area then
+		draw_number = true
+
+	elseif self.area == G.hand and G.STATE == G.STATES.SELECTING_HAND
+		and _draw_numbers_on_unselected_default_area_cards 
+	then
+		-- This card is in the hand area and the game is in the SELECTING_HAND state
+		draw_number = _always_draw_numbers_on_default_area_cards or G.kb_selected_area == nil
+		draw_talon_id = not draw_number
+
+	elseif self.area == G.pack_cards
+			and (
+				G.STATE == G.STATES.TAROT_PACK
+				or G.STATE == G.STATES.PLANET_PACK
+				or G.STATE == G.STATES.SPECTRAL_PACK
+				or G.STATE == G.STATES.BUFFOON_PACK
+				or G.STATE == G.STATES.STANDARD_PACK
+			) and _draw_numbers_on_unselected_default_area_cards 
+	then
+		-- This card is in the pack_cards area and the game is in one of the pack states
+		-- draw_number = true
+		draw_number = _always_draw_numbers_on_default_area_cards or G.kb_selected_area == nil
+		draw_talon_id = not draw_number
+
+	elseif self.area == G.joker
+			and (
+				G.STATE == G.STATES.BLIND_SELECT
+				or G.STATE == G.STATES.HAND_PLAYED
+				or G.STATE == G.STATES.ROUND_EVAL
+			) and _draw_numbers_on_unselected_default_area_cards
+			and _draw_numbers_on_joker_area_when_unselected 
+	then
+		-- This card is in the joker area and the game is in one of the states where selecting a joker is valid
+		-- draw_number = true
+		draw_number = _always_draw_numbers_on_default_area_cards or G.kb_selected_area == nil
+	
+	elseif self.area == G.shop_jokers and G.STATE == G.STATES.SHOP and
+		_draw_numbers_on_unselected_default_area_cards and
+		_draw_numbers_on_shop_joker_area_when_unselected
+	then
+		-- This card is in the shop_jokers area and the game is in the SHOP state
+		-- draw_number = true
+		draw_number = _always_draw_numbers_on_default_area_cards or G.kb_selected_area == nil
+
+	-- elseif self.area == G.pack_cards and _draw_numbers_on_unselected_default_area_cards then
+	-- 	print("CardArea is pack_cards but not valid state. G.STATE: " .. inspect(G.STATE))
+	-- elseif self.area == G.pack_cards and not _draw_numbers_on_unselected_default_area_cards then
+	-- 	print("CardArea is pack_cards drawing numbers on unselected areas is disabled.")
+
+	elseif _draw_ids_on_select_unselected_areas 
+			and (
+				self.area == G.shop_vouchers or
+				self.area == G.shop_booster or
+				self.area == G.pack_cards or
+				self.area == G.consumeables or
+				self.area == G.jokers
+			)
+	then
+		-- This card is in the consumeables area and the consumeables area is not currently selected
+		draw_talon_id = not draw_number
+	end
+
+	-- If there is nothing to draw, return early
+	if not kb_selectable and not draw_number and not draw_talon_id then
+		return
+	end
+
+	if draw_number and _always_draw_talon_ids then
+		draw_talon_id = true
+		draw_number = false
+	end
+
+	local transform = self.VT or self.T
+	love.graphics.push()
+	love.graphics.scale(G.TILESCALE, G.TILESCALE)
+	love.graphics.translate(transform.x*G.TILESIZE+transform.w*G.TILESIZE*0.5, transform.y*G.TILESIZE+transform.h*G.TILESIZE*0.5)
+	love.graphics.rotate(transform.r)
+	love.graphics.translate(-transform.w*G.TILESIZE*0.5, -transform.h*G.TILESIZE*0.5)
+
+	if kb_selectable then
 		love.graphics.setColor(G.C.UI.OUTLINE_LIGHT_TRANS)
-		love.graphics.arc('fill', transform.w*G.TILESIZE*0.5, transform.h*G.TILESIZE*-0.1, 0.2*G.TILESIZE, -3 * math.pi / 4, -math.pi / 4, 1)
+	else
+		-- love.graphics.setColor(G.C.UI.TEXT_INACTIVE)
+		love.graphics.setColor(G.C.UI.TRANSPARENT_DARK)
+	end
 
-		love.graphics.pop()
+	local arrow_x = transform.w*G.TILESIZE*0.5
+	local arrow_y = transform.h*G.TILESIZE*-0.1
+	local arrow_radius = 0.2*G.TILESIZE
+	local arrow_angle1 = -3 * math.pi / 4
+	local arrow_angle2 = -math.pi / 4
+
+	if self.area == G.kb_selected_area then
+		love.graphics.arc('fill', arrow_x, arrow_y, arrow_radius, arrow_angle1, arrow_angle2, 1)
+	end
+
+	-- local dot_radius = G.TILESIZE * 0.00625 * 5 -- dot_radius is 1/32 of the arrow_radius (which is 1/160 of the tilesize)
+	-- draw_dot(arrow_x, arrow_y, dot_radius)  -- Bottom-Center point of the arrow
+	local left_corner = GetArrowCorner(arrow_x, arrow_y, arrow_radius, arrow_angle1)
+	local right_corner = GetArrowCorner(arrow_x, arrow_y, arrow_radius, arrow_angle2)
+	-- draw_dot(left_corner.x, left_corner.y, dot_radius)
+	-- draw_dot(right_corner.x, right_corner.y, dot_radius)
+
+	local arrow_params = {
+		x = arrow_x,
+		y = arrow_y,
+		left_corner = left_corner,
+		right_corner = right_corner,
+		radius = arrow_radius,
+		angle1 = arrow_angle1,
+		angle2 = arrow_angle2,
+	}
+	-- Position the number just slightly above the arrow
+	local y_offset = 1
+	if self.area ~= G.kb_selected_area then
+		-- Move the number down since there is no o->
+		-- y_offset = -5
+		y_offset = -7
+		-- y_offset = -10
+	end
+
+
+	-- self._verbose_log = (verbose ~= nil and {verbose} or {false})[1]
+	local numb_or_id_to_draw = (draw_talon_id and {self.__talon_id} or {self.__kb_index})[1]
+	if not AMA.card_sel:isNewUIEnabled() and (draw_talon_id or draw_number) then
+		draw_number_above_arrow(y_offset, numb_or_id_to_draw, arrow_params)
+	end
+
+	love.graphics.pop()
+
+	-- Try to dump card info
+	-- dump_card_info(self, arrow_radius, arrow_x, arrow_y, left_corner, right_corner)
+end
 	end
 end
 
+
+-- Draw Helpers
+
+function GetArrowCorner(x, y, radius, angle)
+	local corner_x = x + radius * math.cos(angle)
+	local corner_y = y + radius * math.sin(angle)
+	return {x = corner_x, y = corner_y}
+end
+
+-- local dumped_number_info = false
+
+--- Draws a number above the arrow at the given coordinates  
+--- This function is use to indicate which number is associated with each card
+---@param y_offset number The y coordinate (rel to top of arrow) to draw the number at
+---@param number number The number to draw above the arrow
+---@param arrow table The table containing the x and y coordinates of the arrow as well as left_corner, right_corner, radius, angle1, and angle2
+function draw_number_above_arrow(y_offset, number, arrow)
+
+	-- local scale = G.TILESCALE * 0.025
+	local scale = G.TILESIZE * 0.02
+
+    local x = arrow.x
+	local arrow_top_y = arrow.left_corner.y
+	-- local number_y = arrow_top_y --+ y
+
+	-- Get the height of the number
+	local font = love.graphics.getFont()
+	local number_height = font:getHeight()
+	local number_width = font:getWidth(number)
+
+	-- Translate the number to the correct position based on the size of the font
+	-- local number_y = arrow_top_y + y_offset
+
+	-- local number_y_pos = arrow_top_y - number_height * scale - ((number - 1))
+	local number_y_pos = arrow_top_y - number_height * scale - y_offset
+	local number_x_pos = x - (number_width * scale) / 2
+
+    -- love.graphics.setColor(1, 0, 0)
+    love.graphics.setColor(G.C.UI.TEXT_LIGHT)
+    -- love.graphics.print(number, x, y)
+	-- love.graphics.printf(number, x, y, G.TILESIZE * 0.5, number_size, "center")
+	-- love.graphics.print(number, number_x_pos, arrow.left_corner.y, nil, scale, scale)
+	love.graphics.print(number, number_x_pos, number_y_pos, nil, scale, scale)
+
+	-- if not dumped_number_info then
+	-- 	-- INFO - [G] X: 18.687804878049 Y: -16.330866149136 Width: 9 Height: 20
+	-- 	print("X: " .. number_x_pos .. " Y: " .. number_y_pos .. " Width: " .. number_width .. " Height: " .. number_height)
+	-- 	dumped_number_info = true
+	-- end
+
+end

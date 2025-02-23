@@ -159,6 +159,11 @@ function AMA.Voxlatro:get_card_by_talon_id(talon_id)
 	return {card=card, area_name=area_to_select}
 end
 
+
+---Tries to get a card by it's Talon ID and select it's area.
+---Respects the current game state and will not select the hand area if the hand is being played.
+---@param talon_id string The Talon ID of the card to get and select.
+---@return table? {card: Card?, area_selected: boolean} The card and if the area was successfully selected. Returns nil if the Card or area could not be found.
 function AMA.Voxlatro:get_card_and_select_area_by_talon_id(talon_id)
 
 	local ca = self:get_card_by_talon_id(talon_id)
@@ -179,6 +184,9 @@ end
 
 -- ---------- Local Functions ----------
 
+--- Resets the current card selection state variables.
+--- If any cards are highlighted, they will be unhighlighted.
+--- If any hover UI Boxes are visible, they will be dismissed.
 function AMA.Voxlatro:reset_vars()
 	if G.kb_selected_area then G.kb_selected_area:unhighlight_all() end
 	G.kb_selected_area = nil
@@ -443,20 +451,26 @@ function AMA.Voxlatro:try_select_default_cardarea()
 	end
 end
 
+
+---Equivalent to clicking the **Reroll** button in the shop or boss selection screen.
+---@return boolean If the reroll was successful or not.
 function AMA.Voxlatro:reroll()
 	if G.STATE == G.STATES.SHOP then
 		if self:can("reroll") then
 			G.FUNCS.reroll_shop({})
-			return
+			return true
 		end
 	elseif G.STATE == G.STATES.BLIND_SELECT then
 		local fakebutton = {config = {}, children = {{children = {{config = {}}}}}}
 		G.FUNCS.reroll_boss_button(fakebutton)
 		if fakebutton.config.button then
 			G.FUNCS.reroll_boss()
-			return
+			return true
 		end
 	end
+	return false
+end
+
 end
 
 

@@ -20,6 +20,7 @@ end
 -- ---------- Local Variables ----------
 
 G.kb_select_offset = 0
+
 -- ----- Selection Configuration -----
 
 local UNHIGHLIGHT_JOKER_AND_SHOP_CARDS_WHEN_SELECTING_ANOTHER_CARD = true
@@ -42,6 +43,11 @@ function AMA.Voxlatro:init()
 	self.selected_id = nil
 	self.last_state = nil
 	self.last_highlighted = nil
+
+	-- Original Function References --
+	self._update_card = Card.update
+	self._update_area = CardArea.update
+	self._draw_card = Card.draw
 
     -- --- Debug Variables ---
     self.last_card_dumped = 0 -- nil
@@ -1350,15 +1356,13 @@ end
 
 -- ----- Monkey-patching -----
 
-local update_card = Card.update
-local update_area = CardArea.update
-local draw_card = Card.draw
 
 ---@diagnostic disable-next-line: duplicate-set-field
 function Card:update(dt)
-	update_card(self, dt)
+	AMA.card_sel._update_card(self, dt)
 	if not self:in_user_area() then
 		self.__kb_index = nil
+		--TODO: Remove Talon-ID? Although thats done in CardArea:update.
 	end
 	if not self.last_state or G.STATE ~= self.last_state then
 		AMA.card_sel:reset_vars()
@@ -1371,7 +1375,7 @@ end
 
 ---@diagnostic disable-next-line: duplicate-set-field
 function CardArea:update(dt)
-	update_area(self, dt)
+	AMA.card_sel._update_area(self, dt)
 	if self.cards then
 		for i, card in ipairs(self.cards) do
 			card.__kb_index = i
@@ -1386,7 +1390,7 @@ end
 
 ---@diagnostic disable-next-line: duplicate-set-field
 function Card:draw(layer)
-	draw_card(self, layer)
+	AMA.card_sel._draw_card(self, layer)
 
 	-- This seems to do the following:
 	--  - Nothing if the card is NOT in the currently selected area

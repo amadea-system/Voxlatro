@@ -139,6 +139,14 @@ function AMA.Voxlatro:get_card_by_talon_id(talon_id)
 
 	print("Trying to Get Card with Talon-ID " .. inspect(talon_id))
 
+	if type(talon_id) ~= "string" then
+		print("Invalid Talon ID Type: " .. type(talon_id) .. "Must be String! (Dump: " .. inspect(talon_id, {depth=3}) .. ")")
+		return {card=nil, area_name=nil}
+	end
+	
+	-- Convert to uppercase
+	talon_id = string.upper(talon_id)
+
 	local card = nil
 	card = self.assigned_talon_ids[talon_id]
 

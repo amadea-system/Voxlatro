@@ -1361,7 +1361,7 @@ function Card:update(dt)
 		self.__kb_index = nil
 	end
 	if not self.last_state or G.STATE ~= self.last_state then
-		amy:reset_vars()
+		AMA.card_sel:reset_vars()
 		self.last_state = G.STATE
 		if G.STATE == G.STATES.ROUND_EVAL then
 			G.__vi_safe_to_cash_out = false
@@ -1376,7 +1376,7 @@ function CardArea:update(dt)
 		for i, card in ipairs(self.cards) do
 			card.__kb_index = i
 			if card:in_user_area() then
-				AMA.vox:assign_next_talon_id(card)
+				AMA.card_sel:assign_next_talon_id(card)
 			else
 				card.__talon_id = nil
 			end

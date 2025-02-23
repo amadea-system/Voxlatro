@@ -927,8 +927,12 @@ local command_handlers = {
     },
     moveCard = {
         handler = handle_moveCard,
-        data_keys = {cardNumber = true, movement = true, moveType = true},
-        overlay_menu = RequiredOverlayMenuState.FORBID
+        data_keys = {cardNumber = false, movement = true, moveType = true, cardID = false},
+        overlay_menu = RequiredOverlayMenuState.FORBID,
+		conditions = function(command)
+			-- Ensure at least one of `cardNumber` or `cardID` is provided
+			return command.data.cardNumber or command.data.cardID
+		end
     },
 	generalAction = {
 		handler = handle_voxlatroAction,

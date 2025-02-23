@@ -640,7 +640,7 @@ end
 --- If the card is not found, an error message and state is returned in a table.
 ---   The card number references the kb_idx of the cards in the current area, or area provided
 --- Helper function for `AMA.Voxlatro:_get_card_for_move`. You should use that function instead of this one.
---- @param card_number number? The card number to move. 1-based index
+--- @param card_number number The card number to move. 1-based index
 --- @param card_area_name string? The name of the card area the card to move is in. If not provided, the currently selected area will be used. Only valid for numeric card_id.
 --- @return table CardForMove The return value of the function.
 ---  - `state`: boolean If the function was successful or not.

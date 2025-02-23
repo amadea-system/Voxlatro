@@ -1356,6 +1356,7 @@ local draw_card = Card.draw
 
 ---@diagnostic disable-next-line: duplicate-set-field
 function Card:update(dt)
+	update_card(self, dt)
 	if not self:in_user_area() then
 		self.__kb_index = nil
 	end

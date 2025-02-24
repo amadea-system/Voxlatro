@@ -303,6 +303,7 @@ end
 
 --- Sets the currently selected card area
 --- @param id string The ID of the card area to select (e.g. 'hand', 'jokers', etc.)
+--- @return table {state: boolean, msg: string} The result of selecting the desired area
 function AMA.Voxlatro:set_selected(id)
 	--- If the target area doesn't exist or is empty:
 	---   - Reset variables if we're already focused on that area
@@ -316,11 +317,22 @@ function AMA.Voxlatro:set_selected(id)
 		if self.selected_id == id then
 			self:reset_vars()
 		end
-	return end
+		local reason = "unknown reason..."
+		if not G[id] then
+			reason = "The desired area is nil."
+		elseif not G[id].cards then
+			reason = "The desired area's array of cards is nil"
+		elseif #G[id].cards == 0 then
+			reason = "The desired area has no cards."
+		end
+		-- print("Unable to switch to " .. id .. ". " .. reason)
+		return {state=false, msg="Unable to switch to " .. id .. ". " .. reason}
+	end
 	G.CONTROLLER:recall_cardarea_focus(id)
 	self.selected_id = id
 	G.kb_selected_area = G[id]
 	self:update_offset(G.kb_select_offset)
+	return {state=true, msg="Switched to " .. id}
 end
 
 --- Handles toggling card selection at a given offset index. This is the function called by the `0` - `9` KeyBindings

@@ -843,6 +843,40 @@ local function handle_sortCards(command)
 	}
 end
 
+-- --- Card Area Selection Action Handler ---
+
+local function handle_selectCardArea(command)
+	local card_area = command.data.cardArea
+	if not type(card_area) == "string" then
+		return {error = "Key `cardArea` Must Be a String"}
+	end
+	card_area = string.lower(card_area)
+
+	local valid_areas = {
+
+		"hand",           -- Hand of Playing Cards
+		"jokers",         -- Currently owned jokers
+		"consumeables",   -- Currently owned consumable cards
+		"shop_jokers",    -- Jokers in the shop
+		"shop_vouchers",  -- Vouchers in the shop
+		"shop_booster",   -- Booster packs in the shop
+		"pack_cards",     -- The second row of cards in Arcana & Spectral Packs		
+	}
+	if not utils.check_if_value_in_table(card_area, valid_areas) then
+		return {error = "Invalid Card Area: " .. tostring(card_area)}
+	end
+
+	local result = AMA.card_sel:set_selected(card_area)
+	if not result.state then
+		return {warning = "Selecting Card Area `" .. tostring(card_area) .. "` Failed: " .. tostring(result.msg)}
+	end
+
+	return {
+		type = "no-action",
+		reflection = {type = command.data.type, value = card_area}
+	}
+end
+
 -- --- Generic Simple Action Handler ---
 
 --- RPC Command Handler for simple actions
@@ -934,6 +968,11 @@ local command_handlers = {
 			return command.data.cardNumber or command.data.cardID
 		end
     },
+	selectCardArea = {
+		handler = handle_selectCardArea,
+		data_keys = {cardArea = true},
+		overlay_menu = RequiredOverlayMenuState.FORBID
+	},
 	generalAction = {
 		handler = handle_voxlatroAction,
 		data_keys = {action = true},

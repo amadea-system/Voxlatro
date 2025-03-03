@@ -888,8 +888,7 @@ local function handle_voxlatroAction(command)
 	local outcome = nil
 	if type(action) ~= "string" then
 		print("Error! Command: " .. inspect(command))
-		AMA.talon_rpc:send_response(command.uuid, {error = "Key `action` Must Be a String"})
-		return
+		return {error = "Key `action` Must Be a String"}
 	end
 
 	if action == "cashOut" then
@@ -905,18 +904,15 @@ local function handle_voxlatroAction(command)
 	elseif action == "skip" then
 		outcome = AMA.card_sel:discard__skip_or_next()
 	else 
-		AMA.talon_rpc:send_response(command.uuid, {error = "Unknown Action: " .. action})
-		return
+		return {error = "Unknown General Action: " .. tostring(action)}
 	end
 
 	if not outcome then
-		AMA.talon_rpc:send_response(command.uuid, {warning = "Action Failed with unknown error (nil outcome): " .. action})
-		return
+		return {warning = "Action Failed with unknown error (nil outcome): " .. tostring(action)}
 	end
 
 	if not outcome.state or not outcome.activated then
-		AMA.talon_rpc:send_response(command.uuid, {warning = "Action Failed: " .. action})
-		return
+		return {warning = "General Action `" .. tostring(action) .. "` Failed: " .. tostring(outcome.msg)}
 	end
 
 	return {

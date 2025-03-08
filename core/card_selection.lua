@@ -832,6 +832,76 @@ function AMA.Voxlatro:_move_card(card_number, card_area, direction, align_cards)
 
 end
 
+--- Swaps the specified cards in the provided, or current, card area.
+---   If card_id_* is a number, it references the kb_idx of the cards in the current area, or area provided
+---   If card_id_* is a string, it references the Talon ID of the card to move.
+--- @param card_id_a number|string? The CardID or the card number of the first card to swap
+--- @param card_id_b number|string? The CardID or the card number of the second card to swap
+--- @param card_area string? The name of the card area the cards to swap is in. If not provided, the currently selected area will be used. Only valid for numeric card_id.
+--- @param move_card_a CardForMove? CardForMove object for the first card. If not provided, the card will be fetched by the card_id_a & card_area.
+--- @param move_card_b CardForMove? CardForMove object for the second card. If not provided, the card will be fetched by the card_id_b & card_area.
+--- @return table table The return value of the function.
+---  - `state`: boolean If the function was successful or not.
+---  - `msg`: string message explaining the result of the function.
+function AMA.Voxlatro:move_cards_swap_positions(card_id_a, card_id_b, card_area, move_card_a, move_card_b)
+
+	if (card_id_a == nil and move_card_a == nil) or (card_id_b == nil and move_card_b == nil) then
+		return {state=false, msg="Must Provide cardNumber/cardID/CardForMove obj for both cards"}
+	end
+
+	local card_dets_a = move_card_a or self:_get_card_for_move(card_id_a, card_area , true, "move_card_to_position")
+	local card_dets_b = move_card_b or self:_get_card_for_move(card_id_b, card_area , true, "move_card_to_position")
+	if not card_dets_a or not card_dets_b then
+		return {state=false, msg="Error Getting Card Details"}
+	elseif not card_dets_a.state then
+		return card_dets_a
+	elseif not card_dets_b.state then
+		return card_dets_b
+	end
+
+	if card_dets_a.area ~= card_dets_b.area then
+		return {state=false, msg="Both Cards Are Not In The Same Area"}
+	elseif card_dets_a.kb_index == card_dets_b.kb_index then
+		return {state=false, msg="Both Cards Are The Same"}
+	end
+
+	local card_area = card_dets_a.area
+	if not card_area then
+		return {state=false, msg="No Card Area Provided/Found"}
+	end
+	
+	return self:_swap_cards(card_dets_a.kb_index, card_dets_b.kb_index, card_area)
+end
+
+--- Internal Helper function to swap two cards in the given card area.
+--- @param card_number_a number The first card number to swap. 1-based index
+--- @param card_number_b number The second card number to swap. 1-based index
+--- @param card_area CardArea The card area object the cards are in.
+--- @private
+function AMA.Voxlatro:_swap_cards(card_number_a, card_number_b, card_area)
+
+	-- print("<_move_card> Moving Card #" .. tostring(card_number) .. " " .. tostring(direction) .. " (Area: " .. tostring(card_area) .. ")")
+
+	if not card_area then return {state=false, msg="No Area Provided to _swap_cards"} end
+
+	local card_a = card_area.cards[card_number_a]
+	local card_b = card_area.cards[card_number_b]
+	if card_a == nil then
+		return {state=false, msg="Card A @ " .. tostring(card_number_a) .. " does not exist"}
+	elseif card_b == nil then
+		return {state=false, msg="Card B @ " .. tostring(card_number_b) .. " does not exist"}
+	end
+
+	local temp_rank = card_a.rank
+	card_a.rank = card_b.rank
+	card_b.rank = temp_rank
+	table.sort(card_area.cards, function (a, b) return a.rank < b.rank end)
+	card_area:align_cards()
+
+	return {state=true, msg="Card Positions Swapped"}
+
+end
+
 --- Does one of the following actions based on the current game state:
 --- - Exit out of a Booster Pack (`Skip` Button)
 --- - Skip the current blind (`Skip Blind` Button)

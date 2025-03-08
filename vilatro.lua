@@ -579,8 +579,7 @@ local function handle_moveCard(command)
 		print("Moved " .. cardName .. " " .. movement.vector .. " places")
 	elseif move_type == "swapWith" then
 		-- Swap the card with another card
-		-- result = AMA.card_sel:swap_cards(card_number, movement.swapWith, cardArea)
-		result = {state=false, msg="Not Implemented"}
+		result = AMA.card_sel:move_cards_swap_positions(card_number, movement.swapWith, cardArea, nil, nil)
 		print("Swapped " .. cardName .. " with Card #" .. movement.swapWith)
 	end
 

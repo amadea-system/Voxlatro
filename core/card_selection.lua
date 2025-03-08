@@ -491,8 +491,6 @@ function AMA.Voxlatro:reroll()
 	return false
 end
 
-end
-
 
 ---@class CardForMove
 ---@field state boolean If the function was successful or not.

@@ -36,6 +36,7 @@ local UNHIGHLIGHT_JOKER_AND_SHOP_CARDS_WHEN_SELECTING_ANOTHER_CARD = true
 --- @field last_state string? Used in Card:update() to track the last state G.STATE was in. When G.STATE changes, we reset Vars and potentially set it as unsafe to cash out.
 --- @field last_highlighted Card? The last card that was highlighted
 --- @field assigned_talon_ids table<string, Card> A table of all assigned Talon IDs and their corresponding cards.
+--- @field _cashout_event? Event? The cash out event that was triggered. This is used to prevent multiple cash out events from being triggered.
 AMA.Voxlatro = Object:extend()
 
 -- --- Voxlatro Class Methods ---
@@ -57,6 +58,9 @@ function AMA.Voxlatro:init()
 
 	-- --- Talon ID Tracking ---
 	self.assigned_talon_ids = {}
+
+	-- --- CashOut Event ---
+	self._cashout_event = nil
 
 end
 
@@ -956,21 +960,74 @@ end
 
 --- Triggers the same action as the `Cash Out` GUI Button
 --- Only activates when the game is in the correct state.
+--- @return boolean True if the button was pressed, false otherwise
+---@private
+function AMA.Voxlatro:_try_press_cash_out_btn()
+
+	if G.STATE ~= G.STATES.ROUND_EVAL then
+		-- print("Not in Round Eval State")
+		return false
+	end
+
+	local fakebutton = {config = {}}
+	if G.__vi_safe_to_cash_out then
+		G.FUNCS.cash_out(fakebutton)
+		G.__vi_safe_to_cash_out = false
+		return true
+	end
+	-- print("Not safe to cash out yet")
+	return false
+end
+
+
+--- Triggers the same action as the `Cash Out` GUI Button
+--- Only activates when the game is in the correct state.
 --- @return table table The outcome of the action
 ---  - `activated`: boolean True if the action was successful, false otherwise
 ---  - `state`: boolean True if the context was valid to try to trigger the action, false otherwise
 function AMA.Voxlatro:use__cash_out()
-	if G.STATE == G.STATES.ROUND_EVAL then
-		local fakebutton = {config = {}}
-		if G.__vi_safe_to_cash_out then
-			G.FUNCS.cash_out(fakebutton)
-			G.__vi_safe_to_cash_out = false
-			return {activated=true, state=true, msg="Cash Out Triggered"}
-		end
-		return {activated=false, state=true, msg="Still Waiting for Round Eval to Finish"}
+	if G.STATE ~= G.STATES.ROUND_EVAL then
+		-- print("Not in Round Eval State. Current State: " .. tostring(G.STATE))
+		return {activated=false, state=false, msg="Not in Round Eval State"}
 	end
-	return {activated=false, state=false, msg="Not in Round Eval State"}
+
+	if self:_try_press_cash_out_btn() then
+		if self._cashout_event ~= nil then print("WARNING: JUST Cashed Out, But Cashout Wait Event Exists...") end
+		return {activated=true, state=true, msg="Cash Out Triggered"}
+	end
+
+	if self._cashout_event ~= nil then
+		-- print("Cash Out Wait Event Already Exists...")
+		return {activated=false, state=true, msg="Cash Out Wait Event Already Exists"}
+	end
+
+	print("Adding Event to Wait for Round Eval to Finish")
+	self._cashout_event = Event({
+		func = function()
+			-- if AMA.card_sel._cashout_event == nil then
+			if self._cashout_event == nil then
+				print("UNEXPECTED STATE!!! CashOut Wait Event is nil, but the event is still running!!!!!")
+			end
+
+			if G.STATE ~= G.STATES.ROUND_EVAL or not G.__vi_safe_to_cash_out then
+				-- print("... not yet safe///")
+				return false
+			end
+
+			if self:_try_press_cash_out_btn() then
+				self._cashout_event = nil
+				return true
+			end
+			return true
+		end,
+		blocking = false
+	})
+	G.E_MANAGER:add_event(self._cashout_event)
+
+	return {activated=true, state=true, msg="Waiting for Round Eval to Finish"}
+
 end
+
 
 --- Plays the highlighted cards in the current card area
 --- @return table table The outcome of the action

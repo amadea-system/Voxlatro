@@ -9,6 +9,19 @@ I do plan on continuing to work on this mod and improve it over time, but no gua
 
 If you have any questions or need help, feel free to reach out to me. I'm happy to help, but may not be able to respond immediately depending on my availability and/or current workload.
 
+## Requirements
+
+The following tools/mods are required for this mod to work. Other versions may work, but are not tested.
+
+### Steammodded
+
+Version: 1.0.0~ALPHA-1304a-STEAMODDED
+
+### Lovely Injector
+
+- Lovely Injector V0.6.0 - [Commit 1653b40](https://github.com/ethangreen-dev/lovely-injector/commit/1653b4063e9fe69e52f1ab88ee9436c827134faf
+)
+
 ## Available RPC Commands
 
 Please see the [RPC-Commands.md](RPC-Commands.md) file for a list of available RPC commands.

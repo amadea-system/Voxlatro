@@ -460,6 +460,7 @@ function AMA.Voxlatro:try_select_default_cardarea()
 		or G.STATE == G.STATES.SPECTRAL_PACK
 		or G.STATE == G.STATES.BUFFOON_PACK
 		or G.STATE == G.STATES.STANDARD_PACK
+		or G.STATE == G.STATES.SMODS_BOOSTER_OPENED
 	then 
 		self:set_selected("pack_cards")
 	elseif G.STATE == G.STATES.SHOP then
@@ -936,6 +937,7 @@ function AMA.Voxlatro:discard__skip_or_next()
 		or G.STATE == G.STATES.SPECTRAL_PACK
 		or G.STATE == G.STATES.BUFFOON_PACK
 		or G.STATE == G.STATES.STANDARD_PACK
+		or G.STATE == G.STATES.SMODS_BOOSTER_OPENED
 	then
 		if self:can("skip_booster") then
 			G.FUNCS.skip_booster()
@@ -1006,6 +1008,7 @@ function AMA.Voxlatro:context_discard_or_skip()
 		or G.STATE == G.STATES.SPECTRAL_PACK
 		or G.STATE == G.STATES.BUFFOON_PACK
 		or G.STATE == G.STATES.STANDARD_PACK
+		or G.STATE == G.STATES.SMODS_BOOSTER_OPENED
 	then
 		if self:can("skip_booster") then
 			G.FUNCS.skip_booster()
@@ -1446,6 +1449,7 @@ function Card:in_default_selection_area()
 			or G.STATE == G.STATES.SPECTRAL_PACK
 			or G.STATE == G.STATES.BUFFOON_PACK
 			or G.STATE == G.STATES.STANDARD_PACK
+			or G.STATE == G.STATES.SMODS_BOOSTER_OPENED
 		) then
 		return true
 	end
@@ -1647,6 +1651,7 @@ function Card:draw(layer)
 				or G.STATE == G.STATES.SPECTRAL_PACK
 				or G.STATE == G.STATES.BUFFOON_PACK
 				or G.STATE == G.STATES.STANDARD_PACK
+				or G.STATE == G.STATES.SMODS_BOOSTER_OPENED
 			) and _draw_numbers_on_unselected_default_area_cards 
 	then
 		-- This card is in the pack_cards area and the game is in one of the pack states

@@ -32,5 +32,6 @@ return {
 		["SortRank"] = "z", --
 		["PeekDeck"] = "o", --
 		["TalonRPC"] = "f6", --
-	}
+	},
+	["NonEssentialKeybindsDisabled"] = false
 }

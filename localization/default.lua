@@ -2,7 +2,7 @@ return {
 	misc = {
 		dictionary = {
 			vi_keybind_unset = "Unset",
-			vi_keybind_restart = "Any changes will require a manual game restart.",
+			vi_keybind_restart = "Any keybind changes will require a manual game restart.",
 			vi_keybind_sel = "Select",
 			vi_keybind_sel_desc = "Select a card, 0 through 9\nin the current card area",
 			vi_keybind_inc10 = "+10",
@@ -42,7 +42,13 @@ return {
 			vi_keybind_peek_deck = "Peek Deck",
 			vi_keybind_peek_deck_desc = "Previews your deck",
 			vi_keybind_talon_rpc = "Talon RPC HotKey",
-			vi_keybind_talon_rpc_desc = "Signals Balatro that Talon has sent a command\nRequired for some features to work"
+			vi_keybind_talon_rpc_desc = "Signals Balatro that Talon has sent a command\nRequired for some features to work",
+			vi_config_disable_non_essential_keybinds = "Disable Non-Essential Keybinds",
+			vi_config_disable_non_essential_keybinds_info = {
+				"Disables all hotkeys except for the `Talon RPC HotKey`.",
+				"Note: hotkeys will still be able to be triggered by the ",
+				"`keyPress` Talon RPC Command."
+			},
 		}
 	}
 }

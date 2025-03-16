@@ -935,12 +935,15 @@ local RequiredOverlayMenuState = {
 --- @field conditions function(command: TalonRPCCommand)? An optional function to call to determine if the command can be handled. If the function returns `true`, the command will be handled. Otherwise, it will be ignored.
 
 local command_handlers = {
-    selectCard = {
-        handler = handle_selectCard,
-        data_keys = {cardNumber = true},
-        overlay_menu = RequiredOverlayMenuState.FORBID
-    },
-    selectMultipleCards = {
+	-- Select/Deselect a single card
+	selectCard = {
+		handler = handle_selectCard,
+		data_keys = {cardNumber = true},
+		overlay_menu = RequiredOverlayMenuState.FORBID
+	},
+
+	-- Select/Deselect multiple cards
+	selectMultipleCards = {
  		handler = handle_selectMultipleCards,
 		data_keys = {cardNumbers = false, cardIDs = false},
 		overlay_menu = RequiredOverlayMenuState.FORBID,
@@ -948,12 +951,16 @@ local command_handlers = {
 			-- Ensure at least one of `cardNumbers` or `cardIDs` is provided
 			return command.data.cardNumbers or command.data.cardIDs
 		end
-    },
-    invertCardSelection = {
-        handler = handle_invertCardSelection,
-        data_keys = {exceptCards = false},
-        overlay_menu = RequiredOverlayMenuState.FORBID
-    },
+	},
+
+	-- Invert the current selection of cards
+	invertCardSelection = {
+		handler = handle_invertCardSelection,
+		data_keys = {exceptCards = false},
+		overlay_menu = RequiredOverlayMenuState.FORBID
+	},
+
+	-- Move a card to a new position, relative position, or swap with another card
     moveCard = {
         handler = handle_moveCard,
         data_keys = {cardNumber = false, movement = true, moveType = true, cardID = false},
@@ -1122,6 +1129,7 @@ end
 
 -- Mod stuff
 
+-- ----- Keybinds Registration -----
 
 --- Table defining the default keybinds for the mod that are only available when no Overlay Menu is open
 keybinds = {
@@ -1182,25 +1190,42 @@ always_available_keybinds = {
 	["TalonRPC"] = run_talon_RPC_command
 }
 
-
-local function register_keybinds(keybinding_table, block_by_overlay_menu)
-	for key, action in pairs(keybinding_table) do
-		if mod.config.KeyBinds ~= nil and mod.config.KeyBinds[key] ~= false then
-			SMODS.Keybind {
-				key = "vilatro_binding_" .. key,
-				key_pressed = mod.config.KeyBinds[key],
-				action = function()
-					if not G.OVERLAY_MENU or not block_by_overlay_menu then action() end
+--- Register a single keybinding with Steamodded
+--- @param keybind_name string The name of the keybinding to register. Must match the key used in the Config GUI and config.lua
+--- @param keybind_function function The function to call when the keybinding is triggered
+--- @param block_by_overlay_menu boolean If true, the keybinds will be blocked if the overlay menu is open
+--- @param disableable boolean If true, the keybinds will be disabled when the NonEssentialKeybindsDisabled setting is true. (ie. For RPC Trigger Keybind)
+local function register_single_keybind(keybind_name, keybind_function, block_by_overlay_menu, disableable)
+	local key = keybind_name
+	local kb_action = keybind_function
+	if mod.config.KeyBinds ~= nil and mod.config.KeyBinds[key] ~= false then
+		SMODS.Keybind {
+			key = "vilatro_binding_" .. key,
+			key_pressed = mod.config.KeyBinds[key],
+			action = function()
+				if (not G.OVERLAY_MENU or not block_by_overlay_menu) and (not disableable or not mod.config.NonEssentialKeybindsDisabled) then
+					print("Keybind Triggered: " .. key)
+					kb_action()
 				end
-			}
-		end
+			end
+		}
+	end
+end
+
+--- Register multiple keybinds with Steamodded
+--- @param keybinding_table table<string, function> The table of keybinds to register
+--- @param block_by_overlay_menu boolean If true, the keybinds will be blocked if the overlay menu is open
+--- @param disableable boolean If true, the keybinds will be disabled when the NonEssentialKeybindsDisabled setting is true. (ie. For RPC Trigger Keybind)
+local function register_keybinds(keybinding_table, block_by_overlay_menu, disableable)
+	for key, action in pairs(keybinding_table) do
+		register_single_keybind(key, action, block_by_overlay_menu, disableable)
 	end
 end
 
 if ENABLE_NON_RPC_KEYBINDS then
-	register_keybinds(keybinds, true)
+	register_keybinds(keybinds, true, true)
 end
-register_keybinds(always_available_keybinds, false)
+register_keybinds(always_available_keybinds, false, false)
 
 
 if DEBUG_MODE then
@@ -1252,333 +1277,9 @@ if DEBUG_MODE then
 
 end
 
-
--- UI stuff
-
--- from https://gist.github.com/GabrielBdeC/b055af60707115cbc954b0751d87ec23
-function string:split(delimiter)
-    local result = {}
-    local from = 1
-    local delim_from, delim_to = string.find(self, delimiter, from, true)
-    while delim_from do
-        if (delim_from ~= 1) then
-            table.insert(result, string.sub(self, from, delim_from-1))
-        end
-        from = delim_to + 1
-        delim_from, delim_to = string.find(self, delimiter, from, true)
-    end
-    if (from <= #self) then table.insert(result, string.sub(self, from)) end
-    return result
-end
-
-local function create_keybind_button(args)
-	args.align = args.align or "cm"
-	args.active_colour = args.active_colour or G.C.GREY
-	args.w = args.w or 0.8
-	args.h = args.h or 0.8
-	args.scale = args.scale or 1
-	args.label_scale = args.label_scale or 0.5
-	
-	local children = {}
-	
-	if args.label then
-		children[#children+1] = {
-			n = G.UIT.C,
-			config = { align = "cm", colour = G.C.CLEAR },
-			nodes = {
-				{
-					n = G.UIT.T,
-					config = {
-						text = localize(args.label),
-						scale = args.label_scale,
-						colour = G.C.UI.TEXT_LIGHT,
-						shadow = true
-					}
-				},
-				{
-					n = G.UIT.B,
-					config = { w = 0.1, h = 0.1, colour = G.C.CLEAR }
-				}
-			}
-		}
-	end
-	
-	children[#children+1] = {
-		n = G.UIT.C,
-		config = {
-			align = "cm", colour = args.active_colour,
-			hover = true, r = 0.1, padding = 0.1,
-			minw = args.w, minh = args.h,
-			button = 'bind_key',
-			ref_table = args.ref_table,
-			ref_value = args.ref_value,
-		},
-		nodes = {{
-			n = G.UIT.T,
-			config = {
-				text = args.ref_table[args.ref_value] or localize("vi_keybind_unset"),
-				scale = 0.4,
-				colour = G.C.UI.TEXT_LIGHT,
-				shadow = false,
-			}
-		}}
-	}
-	
-	return {
-		n = G.UIT.C,
-		config = {
-			align = args.align,
-			padding = 0.1,
-			r = 0.1,
-			colour = G.C.CLEAR,
-			focus_args = { funnel_from = true },
-			tooltip = args.info and {text = localize(args.info):split("\n")}
-		},
-		nodes = children
-	}
-end
-
-function G.FUNCS.bind_key(e)
-	e.children[1].config.text = "..."
-	e.children[1].UIBox:recalculate()
-	
-	G.keybind_callback = function(key)
-		if not e then return end
-		if not e.children then return end
-		if not e.children[1] then return end
-		if not e.children[1].config then return end
-		
-		local bound_key = key
-		if bound_key == "escape" then
-			bound_key = false
-		end
-		
-		e.config.ref_table[e.config.ref_value] = bound_key
-		e.children[1].config.text = bound_key or localize("vi_keybind_unset")
-		e.children[1].UIBox:recalculate()
-		
-	end
-end
-
-mod.config_tab = function()
-	return {
-		n=G.UIT.ROOT,
-		config = {align = "cm", padding = 0.05, r = 0.1, minw=8, minh=6, colour = G.C.BLACK}, 
-		nodes = {
-			{
-				n = G.UIT.R,
-				config = {
-					align = "cm", colour = G.C.UI.CLEAR, padding = 0
-				},
-				nodes = {{
-					n = G.UIT.C,
-					config = {
-						align = "cm", colour = G.C.RED, r = 0.1, padding = 0.1
-					},
-					nodes = {{
-						n = G.UIT.T,
-						config = {
-							text = localize("vi_keybind_restart"),
-							colour = G.C.UI.TEXT_LIGHT,
-							scale = 0.6,
-							padding = 0.05,
-							shadow = false
-						}
-					}}
-				}}
-			},
-			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select1",
-					label = "vi_keybind_sel",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select2",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select3",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select4",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select5",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select6",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select7",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select8",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select9",
-					info = "vi_keybind_sel_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Select0",
-					info = "vi_keybind_sel_desc"
-				},
-			}},
-			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Dec10",
-					label = "vi_keybind_dec10",
-					info = "vi_keybind_dec10_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Inc10",
-					label = "vi_keybind_inc10",
-					info = "vi_keybind_inc10_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "DeselectAll",
-					label = "vi_keybind_desel",
-					info = "vi_keybind_desel_desc"
-				},
-			}},
-			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectHand",
-					label = "vi_keybind_sel_hand",
-					info = "vi_keybind_sel_hand_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectJokers",
-					label = "vi_keybind_sel_jokers",
-					info = "vi_keybind_sel_jokers_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectConsumeables",
-					label = "vi_keybind_sel_consumables",
-					info = "vi_keybind_sel_consumables_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectPackCards",
-					label = "vi_keybind_sel_pack_cards",
-					info = "vi_keybind_sel_pack_cards_desc"
-				},
-			}},
-			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectShopJokers",
-					label = "vi_keybind_sel_shop",
-					info = "vi_keybind_sel_shop_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectShopVouchers",
-					info = "vi_keybind_sel_shop_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectShopBooster",
-					info = "vi_keybind_sel_shop_desc"
-				},
-			}},
-			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectCycleLeft",
-					label = "vi_keybind_sel_left",
-					info = "vi_keybind_sel_left_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SelectCycleRight",
-					label = "vi_keybind_sel_right",
-					info = "vi_keybind_sel_right_desc"
-				},
-			}},
-			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Discard",
-					label = "vi_keybind_discard",
-					info = "vi_keybind_discard_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Use",
-					label = "vi_keybind_use",
-					info = "vi_keybind_use_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "BuyAndUse",
-					label = "vi_keybind_buy_and_use",
-					info = "vi_keybind_buy_and_use_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "PeekDeck",
-					label = "vi_keybind_peek_deck",
-					info = "vi_keybind_peek_deck_desc"
-				},
-			}},
-			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Reroll",
-					label = "vi_keybind_reroll",
-					info = "vi_keybind_reroll_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "Sell",
-					label = "vi_keybind_sell",
-					info = "vi_keybind_sell_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SortSuit",
-					label = "vi_keybind_sort_suit",
-					info = "vi_keybind_sort_suit_desc"
-				},
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "SortRank",
-					label = "vi_keybind_sort_rank",
-					info = "vi_keybind_sort_rank_desc"
-				},
-			}},
-			{n=G.UIT.R, config={align = "cm", colour = G.C.CLEAR}, nodes={
-				create_keybind_button {
-					ref_table = mod.config.KeyBinds,
-					ref_value = "TalonRPC",
-					label = "vi_keybind_talon_rpc",
-					info = "vi_keybind_talon_rpc_desc"
-				},
-				
-			}},
-		}
-	}
+-- ----- Load Config Tab UIs -----
+local _, err = SMODS.load_file("core/config_tab_ui.lua")()
+if err then
+	print("Error loading library `config_tab_ui`: " .. err)
+	error(err)
 end
